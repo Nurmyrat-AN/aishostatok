@@ -37,7 +37,7 @@ dependencies:
   sqflite: ^2.3.3+1      # Актуальная версия для мобильных
   path_provider: ^2.1.5 # Или ваша текущая версия
   path: ^1.9.0          # Или ваша текущая версия
-  sqlite3: ^2.5.0       # Для десктопа и веба
+  sqlite3: ^2.9.0       # Для десктопа и веба
   sqlite3_flutter_libs: ^0.5.33 # Для работы sqlite3 на всех платформах
   sqflite_common_ffi: ^2.3.3+1
   image_picker: ^1.1.2
