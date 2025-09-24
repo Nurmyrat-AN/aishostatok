@@ -31,7 +31,9 @@ class ProductsScreen extends StatefulWidget {
 class _ProductsScreen extends State<ProductsScreen> {
   Future<String?> lastUpdatedAt = AishManager().lastUpdatedAt;
   Future<List<MProduct>> productsFuture = MProduct.getAll();
+  Future<List<MColor>> _colorsFuture = MColor.getAll();
   final _searchController = TextEditingController();
+  final _barcodeController = TextEditingController();
   String? _orderBy = "name";
   MMeasure? _measure;
   MWarehouse? _warehouse;
@@ -50,19 +52,23 @@ class _ProductsScreen extends State<ProductsScreen> {
   initState() {
     super.initState();
     _searchController.addListener(_fetchProducts);
+    _barcodeController.addListener(_fetchProducts);
   }
 
   @override
   dispose() {
     super.dispose();
     _searchController.dispose();
+    _barcodeController.dispose();
   }
 
   _fetchProducts() {
     setState(() {
+      _colorsFuture = MColor.getAll();
       _products = [];
       productsFuture = MProduct.getAll(
         query: _searchController.text,
+        barcode: _barcodeController.text,
         orderBy: _orderBy,
         measureId: _measure?.json['_id'],
         warehouseId: _warehouse?.json['_id'],
@@ -97,36 +103,46 @@ class _ProductsScreen extends State<ProductsScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    prefixIcon: PopupMenuButton(
-                      itemBuilder:
-                          (context) =>
-                              MProduct.orderByOptions
-                                  .map<PopupMenuItem<String>>(
-                                    (e) => PopupMenuItem(
-                                      value: e['value'],
-                                      child: Text(e['label']!),
-                                    ),
-                                  )
-                                  .toList(),
-                      onSelected: (value) {
-                        setState(() {
-                          _orderBy = value;
-                        });
-                        _fetchProducts();
-                      },
-                      child: Icon(Icons.sort),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _barcodeController,
+                        decoration: InputDecoration(
+                          prefixIcon: PopupMenuButton(
+                            itemBuilder:
+                                (context) =>
+                                    MProduct.orderByOptions
+                                        .map<PopupMenuItem<String>>(
+                                          (e) => PopupMenuItem(
+                                            value: e['value'],
+                                            child: Text(e['label']!),
+                                          ),
+                                        )
+                                        .toList(),
+                            onSelected: (value) {
+                              setState(() {
+                                _orderBy = value;
+                              });
+                              _fetchProducts();
+                            },
+                            child: Icon(Icons.sort),
+                          ),
+                          label: Text("Ştrihkod"),
+                        ),
+                      ),
                     ),
-                    hintText: "Gözleg",
-                    suffixIcon: IconButton(
-                      onPressed: () {
-                        setState(() {});
-                      },
-                      icon: Icon(Icons.search),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: "Gözleg",
+                          suffixIcon: Icon(Icons.search),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
               SizedBox(width: 10),
@@ -325,7 +341,7 @@ class _ProductsScreen extends State<ProductsScreen> {
                 }
                 _products = snapshot.data! ?? [];
                 return RefreshIndicator(
-                  onRefresh: () => _fetchProducts(),
+                  onRefresh: () async => _fetchProducts(),
                   child: ListView.builder(
                     itemCount: snapshot.data!.length,
                     itemBuilder: (context, index) {
@@ -342,37 +358,116 @@ class _ProductsScreen extends State<ProductsScreen> {
                             _fetchProducts();
                           }
                         },
-                        leading: CircleAvatar(
-                          backgroundColor:
-                              product.json['backgroundColor'] == null
-                                  ? Colors.white
-                                  : Color(
-                                    int.parse(
-                                      product.json['backgroundColor'].substring(
-                                        1,
-                                        9,
-                                      ),
-                                      radix: 16,
-                                    ),
-                                  ),
-                          child: Text(
-                            product.name[0],
-                            style: TextStyle(
-                              color:
-                                  product.json['fontColor'] == null
-                                      ? Colors.grey
-                                      : Color(
-                                        int.parse(
-                                          product.json['fontColor'].substring(
-                                            1,
-                                            9,
-                                          ),
-                                          radix: 16,
+                        leading: FutureBuilder(
+                          future: _colorsFuture,
+                          builder: (context, snapshot) {
+                            final colors = snapshot.data ?? [];
+                            return DropdownButton<MColor>(
+                              onChanged: (value) async {
+                                await AishManager().updateProduct(
+                                  id: product.json['_id'],
+                                  color: value,
+                                );
+                                _fetchProducts();
+                              },
+                              underline: SizedBox(),
+                              selectedItemBuilder: (context) => [SizedBox()],
+                              menuWidth:
+                                  MediaQuery.of(context).size.width - 100,
+                              alignment: Alignment.bottomRight,
+                              items:
+                                  colors
+                                      .map(
+                                        (e) => DropdownMenuItem(
+                                          value: e,
+                                          child: Text(e.name),
                                         ),
-                                      ),
-                            ),
-                          ),
+                                      )
+                                      .toList(),
+                              icon: CircleAvatar(
+                                radius: 12,
+                                backgroundColor:
+                                    _color != null
+                                        ? Color(
+                                          int.parse(
+                                            _color!.backgroundColor.substring(
+                                              1,
+                                              9,
+                                            ),
+                                            radix: 16,
+                                          ),
+                                        )
+                                        : product.json['backgroundColor'] !=
+                                            null
+                                        ? Color(
+                                          int.parse(
+                                            product.json['backgroundColor']
+                                                .substring(1, 9),
+                                            radix: 16,
+                                          ),
+                                        )
+                                        : Colors.white,
+                                child: Text(
+                                  product.name[0],
+                                  style: TextStyle(
+                                    color:
+                                        _color != null
+                                            ? Color(
+                                              int.parse(
+                                                _color!.fontColor.substring(
+                                                  1,
+                                                  9,
+                                                ),
+                                                radix: 16,
+                                              ),
+                                            )
+                                            : product.json['fontColor'] != null
+                                            ? Color(
+                                              int.parse(
+                                                product.json['fontColor']
+                                                    .substring(1, 9),
+                                                radix: 16,
+                                              ),
+                                            )
+                                            : Colors.grey,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
                         ),
+
+                        // leading: CircleAvatar(
+                        //   backgroundColor:
+                        //       product.json['backgroundColor'] == null
+                        //           ? Colors.white
+                        //           : Color(
+                        //             int.parse(
+                        //               product.json['backgroundColor'].substring(
+                        //                 1,
+                        //                 9,
+                        //               ),
+                        //               radix: 16,
+                        //             ),
+                        //           ),
+                        //   child: Text(
+                        //     product.name[0],
+                        //     style: TextStyle(
+                        //       color:
+                        //           product.json['fontColor'] == null
+                        //               ? Colors.grey
+                        //               : Color(
+                        //                 int.parse(
+                        //                   product.json['fontColor'].substring(
+                        //                     1,
+                        //                     9,
+                        //                   ),
+                        //                   radix: 16,
+                        //                 ),
+                        //               ),
+                        //     ),
+                        //   ),
+                        // ),
                         title: Text(product.name),
                         subtitle: RichText(
                           text: TextSpan(

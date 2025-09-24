@@ -3,7 +3,6 @@ import 'package:aishostatok/database/models/mcolor.dart';
 import 'package:aishostatok/database/models/measure.dart';
 import 'package:aishostatok/database/models/product.dart';
 import 'package:aishostatok/database/models/warehouse.dart';
-import 'package:aishostatok/utils/query.dart';
 import 'package:flutter/material.dart';
 
 class FilterProducts extends StatefulWidget {
@@ -137,6 +136,9 @@ class _FilterProducts extends State<FilterProducts> {
                         labelText: "Galyndy",
                         border: OutlineInputBorder(),
                         helperText: "10<,15<>50,20>,5=<,50=<>=60,12=,30>=",
+                        suffixIcon: _buildStockSelector(
+                          controller: _stockController,
+                        ),
                       ),
                     ),
                     SizedBox(height: 16),
@@ -146,6 +148,9 @@ class _FilterProducts extends State<FilterProducts> {
                         labelText: "Minimum bn galyndynyň tapawudy",
                         border: OutlineInputBorder(),
                         helperText: "10<,15<>50,20>,5=<,50=<>=60,12=,30>=",
+                        suffixIcon: _buildStockSelector(
+                          controller: _minStockController,
+                        ),
                       ),
                     ),
                     SizedBox(height: 16),
@@ -252,6 +257,26 @@ class _FilterProducts extends State<FilterProducts> {
           ],
         ),
       ),
+    );
+  }
+
+  PopupMenuButton<String> _buildStockSelector({
+    required TextEditingController controller,
+  }) {
+    return PopupMenuButton(
+      itemBuilder:
+          (context) => [
+            PopupMenuItem(value: "0>=", child: Text("Nol we noldan azalanlar")),
+            PopupMenuItem(value: "0=", child: Text("Nola den bolanlar")),
+            PopupMenuItem(value: "0>", child: Text("Noldan kiciler")),
+            PopupMenuItem(value: "0<", child: Text("Noldan ulylar")),
+          ],
+      child: Icon(Icons.abc),
+      onSelected: (value) {
+        if (value.isEmpty) return;
+        final oldStr = controller.text;
+        controller.text = "$oldStr${oldStr.isEmpty ? '' : ','}$value";
+      },
     );
   }
 

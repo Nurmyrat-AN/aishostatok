@@ -173,6 +173,9 @@ class _LoadingProgressState extends State<LoadingProgress> {
           };
           await txn.insert(tableName, writeData, conflictAlgorithm: ConflictAlgorithm.replace);
           final List<dynamic> barcodes = json['lstBarcodes'] ?? [];
+          if(barcodes.isNotEmpty) {
+            debugPrint(barcodes.toString());
+          }
           for (var barcode in barcodes) {
             await txn.insert("lstBarcodes", {
               "product_id": json['_id'],

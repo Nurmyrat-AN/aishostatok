@@ -14,14 +14,8 @@ class MProduct extends BaseModel {
     {"value": 'name DESC', "label": 'Ady (Z-A)'},
     {"value": "price_base_for_sale", "label": "Satyş baha (azdan köpe)"},
     {"value": "price_base_for_sale DESC", "label": "Satyş baha (köpden aza)"},
-    {
-      "value": "price_base_for_buying ASC",
-      "label": "Alyş baha (azdan köpe)",
-    },
-    {
-      "value": "price_base_for_buying DESC",
-      "label": "Alyş baha (köpden aza)",
-    },
+    {"value": "price_base_for_buying ASC", "label": "Alyş baha (azdan köpe)"},
+    {"value": "price_base_for_buying DESC", "label": "Alyş baha (köpden aza)"},
     {
       "value": "price_minimum_for_sale ASC",
       "label": "Minimum baha (azdan köpe)",
@@ -95,6 +89,7 @@ class MProduct extends BaseModel {
     String? property_5,
     String? stock,
     String? minStock,
+    String? barcode,
   }) async {
     final db = await AppDatabase().database;
     String stockQuery = numberQuery(
@@ -126,24 +121,21 @@ class MProduct extends BaseModel {
                   (product.property_5 = color_configurations.property_5 OR color_configurations.property_5 IS NULL OR color_configurations.property_5 = '')
         WHERE 
           1=1
-          ${query != null && query != '' ? '''
-          AND (
-            product.name LIKE '%$query%' OR
-            product._id IN (SELECT product_id FROM lstBarcodes WHERE barcode LIKE '$query')
-          )
-          ''' : ''}
-          ${currencyId != null ? 'AND currency = "$currencyId"' : ''}
-          ${measureId != null ? 'AND measure = "$measureId"' : ''}
-          ${property_1 != null && property_1 != '' ? 'AND product.property_1 LIKE "$property_1"' : ''}
-          ${property_2 != null && property_2 != '' ? 'AND product.property_2 LIKE "$property_2"' : ''}
-          ${property_3 != null && property_3 != '' ? 'AND product.property_3 LIKE "$property_3"' : ''}
-          ${property_4 != null && property_4 != '' ? 'AND product.property_4 LIKE "$property_4"' : ''}
-          ${property_5 != null && property_5 != '' ? 'AND product.property_5 LIKE "$property_5"' : ''}
+          ${query != null && query != '' ? "AND product.name LIKE '%${query.replaceAll(" ", "%")}%'" : ''}
+          ${barcode != null && barcode != '' ? "AND product._id IN (SELECT product_id FROM lstBarcodes WHERE barcode LIKE '$barcode')" : ''}
+          ${currencyId != null ? "AND currency = '$currencyId'" : ''}
+          ${measureId != null ? "AND measure = '$measureId'" : ''}
+          ${property_1 != null && property_1 != '' ? "AND product.property_1 LIKE '$property_1'" : ''}
+          ${property_2 != null && property_2 != '' ? "AND product.property_2 LIKE '$property_2'" : ''}
+          ${property_3 != null && property_3 != '' ? "AND product.property_3 LIKE '$property_3'" : ''}
+          ${property_4 != null && property_4 != '' ? "AND product.property_4 LIKE '$property_4'" : ''}
+          ${property_5 != null && property_5 != '' ? "AND product.property_5 LIKE '$property_5'" : ''}
     ) WHERE 1=1
         ${stockQuery != '' ? 'AND $stockQuery' : ''}
         ${minStockQuery != '' ? 'AND $minStockQuery' : ''}
         ORDER BY $orderBy
     ''';
+    debugPrint(sqlQuery);
     final cursor = await db.rawQuery(sqlQuery);
     final data = cursor.map((e) => MProduct(json: e)).toList();
     return data;
