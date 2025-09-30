@@ -1,6 +1,7 @@
 import 'package:aishostatok/database/models/currency.dart';
 import 'package:aishostatok/database/models/product.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:printing/printing.dart';
 import 'dart:typed_data';
@@ -26,6 +27,8 @@ class _PrintScreenState extends State<PrintScreen> {
   final _property_3 = TextEditingController();
   final _property_4 = TextEditingController();
   final _property_5 = TextEditingController();
+  final _fontSizeController = TextEditingController();
+  double _fontSize = 5;
 
   String? p1 = '', p2 = '', p3 = '', p4 = '', p5 = '';
 
@@ -38,6 +41,7 @@ class _PrintScreenState extends State<PrintScreen> {
     _property_3.addListener(() => _listener(3));
     _property_4.addListener(() => _listener(4));
     _property_5.addListener(() => _listener(5));
+    _fontSizeController.addListener(() => _listener(6));
     _initProperties();
   }
 
@@ -48,10 +52,9 @@ class _PrintScreenState extends State<PrintScreen> {
         p1 = _property_1.text;
         pref.setString("property_1", _property_1.text);
         break;
-
       case 2:
         p2 = _property_2.text;
-        pref.setString("property_1", _property_2.text);
+        pref.setString("property_2", _property_2.text);
         break;
       case 3:
         p3 = _property_3.text;
@@ -63,7 +66,11 @@ class _PrintScreenState extends State<PrintScreen> {
         break;
       case 5:
         p5 = _property_5.text;
-        pref.setString("property5", _property_5.text);
+        pref.setString("property_5", _property_5.text);
+        break;
+      case 6:
+        _fontSize = double.tryParse(_fontSizeController.text) ?? 5;
+        pref.setDouble("fontSize", _fontSize);
         break;
     }
     setState(() {});
@@ -76,6 +83,9 @@ class _PrintScreenState extends State<PrintScreen> {
     _property_3.text = pref.getString('property_3') ?? "Aýratynlyk 3";
     _property_4.text = pref.getString('property_4') ?? "Aýratynlyk 4";
     _property_5.text = pref.getString('property_5') ?? "Aýratynlyk 5";
+    _fontSizeController.text = (pref.getDouble('fontSize') ?? 5).toString();
+
+    setState(() {});
   }
 
   @override
@@ -84,54 +94,78 @@ class _PrintScreenState extends State<PrintScreen> {
       appBar: AppBar(title: Text("Öň gorme")),
       body: Column(
         children: [
-          FutureBuilder(
-            future: _future,
-            builder: (context, snapshot) {
-              _currencies = snapshot.data ?? [];
-              return Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Autocomplete<MCurrency>(
-                  optionsBuilder:
-                      (textEditingValue) => _currencies!.where(
-                        (element) => element.name.toLowerCase().contains(
-                          textEditingValue.text.toLowerCase(),
-                        ),
+          Row(
+            children: [
+              Expanded(
+                child: FutureBuilder(
+                  future: _future,
+                  builder: (context, snapshot) {
+                    _currencies = snapshot.data ?? [];
+                    return Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Autocomplete<MCurrency>(
+                        optionsBuilder:
+                            (textEditingValue) => _currencies!.where(
+                              (element) => element.name.toLowerCase().contains(
+                                textEditingValue.text.toLowerCase(),
+                              ),
+                            ),
+                        onSelected:
+                            (option) => setState(() {
+                              _currency = option;
+                            }),
+                        displayStringForOption: (option) => option.name,
+                        fieldViewBuilder:
+                            (
+                              context,
+                              textEditingController,
+                              focusNode,
+                              onFieldSubmitted,
+                            ) => TextField(
+                              controller: textEditingController,
+                              focusNode: focusNode,
+                              onSubmitted: (value) => onFieldSubmitted(),
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(),
+                                labelText: "Çap etme walýutasy",
+                                suffixIcon:
+                                    _currency == null
+                                        ? null
+                                        : IconButton(
+                                          onPressed: () {
+                                            textEditingController.text = "";
+                                            setState(() {
+                                              _currency = null;
+                                            });
+                                          },
+                                          icon: Icon(Icons.clear),
+                                        ),
+                              ),
+                            ),
                       ),
-                  onSelected:
-                      (option) => setState(() {
-                        _currency = option;
-                      }),
-                  displayStringForOption: (option) => option.name,
-                  fieldViewBuilder:
-                      (
-                        context,
-                        textEditingController,
-                        focusNode,
-                        onFieldSubmitted,
-                      ) => TextField(
-                        controller: textEditingController,
-                        focusNode: focusNode,
-                        onSubmitted: (value) => onFieldSubmitted(),
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(),
-                          labelText: "Çap etme walýutasy",
-                          suffixIcon:
-                              _currency == null
-                                  ? null
-                                  : IconButton(
-                                    onPressed: () {
-                                      textEditingController.text = "";
-                                      setState(() {
-                                        _currency = null;
-                                      });
-                                    },
-                                    icon: Icon(Icons.clear),
-                                  ),
-                        ),
-                      ),
+                    );
+                  },
                 ),
-              );
-            },
+              ),
+              SizedBox(width: 8),
+              SizedBox(
+                width: 150,
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TextField(
+                    decoration: InputDecoration(
+                      labelText: "Hatyň razmeri",
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                    controller: _fontSizeController,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
           SizedBox(height: 8),
           Padding(
@@ -187,15 +221,14 @@ class _PrintScreenState extends State<PrintScreen> {
 
   Future<Uint8List> _generatePdf(PdfPageFormat format, String title) async {
     final pdf = pw.Document(version: PdfVersion.pdf_1_5, compress: true);
-    final font = await PdfGoogleFonts.nunitoExtraLight();
+    final font = await PdfGoogleFonts.anekLatinLight();
     final products = await MProduct.getAll(ids: widget.selectedProducts);
     pdf.addPage(
       pw.Page(
         margin: pw.EdgeInsets.all(8),
         pageFormat: format,
         theme: pw.ThemeData(
-          bulletStyle: pw.TextStyle(font: font, fontSize: 5),
-          defaultTextStyle: pw.TextStyle(font: font, fontSize: 5),
+          defaultTextStyle: pw.TextStyle(font: font, fontSize: _fontSize),
         ),
         build: (context) {
           return pw.Table(

@@ -96,6 +96,7 @@ class MProduct extends BaseModel {
     String? minStock,
     String? barcode,
     List<String>? ids,
+    int? colorId,
   }) async {
     final db = await AppDatabase().database;
     String stockQuery = numberQuery(
@@ -116,6 +117,7 @@ class MProduct extends BaseModel {
           color_configurations.name as colorName,
           color_configurations.backgroundColor as backgroundColor,
           color_configurations.fontColor as fontColor,
+          color_configurations.id as colorId,
           lstBarcodes.barcode as barcode
         FROM product 
           LEFT JOIN currency ON currency._id = product.currency 
@@ -137,6 +139,7 @@ class MProduct extends BaseModel {
         ${stockQuery != '' ? 'AND $stockQuery' : ''}
         ${minStockQuery != '' ? 'AND $minStockQuery' : ''}
         ${ids != null ? 'AND _id IN(${ids.map((e) => "'$e'").join(', ')})' : ''}
+        ${colorId != null ? ' AND colorId = $colorId' : ''}
         GROUP BY _id
         ORDER BY $orderBy
     ''';
