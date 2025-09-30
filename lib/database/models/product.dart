@@ -1,5 +1,6 @@
 import 'package:aishostatok/database/app_database.dart';
 import 'package:aishostatok/database/base_model.dart';
+import 'package:aishostatok/database/models/mcolor.dart';
 import 'package:aishostatok/utils/query.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:sqflite/sqflite.dart';
@@ -40,6 +41,10 @@ class MProduct extends BaseModel {
 
   double get percentForSale =>
       (json['price_base_for_sale'] / json['price_base_for_buying'] - 1) * 100;
+
+  double get percentForMinimumSale =>
+      (json['price_minimum_for_sale'] / json['price_base_for_buying'] - 1) *
+      100;
 
   static Future<void> createTable(Database db) async {
     await db.execute("DROP TABLE IF EXISTS lstBarcodes");
@@ -90,6 +95,7 @@ class MProduct extends BaseModel {
     String? stock,
     String? minStock,
     String? barcode,
+    List<String>? ids,
   }) async {
     final db = await AppDatabase().database;
     String stockQuery = numberQuery(
@@ -109,16 +115,13 @@ class MProduct extends BaseModel {
           measure.name as measureName,
           color_configurations.name as colorName,
           color_configurations.backgroundColor as backgroundColor,
-          color_configurations.fontColor as fontColor
+          color_configurations.fontColor as fontColor,
+          lstBarcodes.barcode as barcode
         FROM product 
           LEFT JOIN currency ON currency._id = product.currency 
           LEFT JOIN measure ON measure._id = product.measure
-          LEFT JOIN color_configurations ON 
-                  (product.property_1 = color_configurations.property_1 OR color_configurations.property_1 IS NULL OR color_configurations.property_1 = '') AND 
-                  (product.property_2 = color_configurations.property_2 OR color_configurations.property_2 IS NULL OR color_configurations.property_2 = '') AND 
-                  (product.property_3 = color_configurations.property_3 OR color_configurations.property_3 IS NULL OR color_configurations.property_3 = '') AND 
-                  (product.property_4 = color_configurations.property_4 OR color_configurations.property_4 IS NULL OR color_configurations.property_4 = '') AND 
-                  (product.property_5 = color_configurations.property_5 OR color_configurations.property_5 IS NULL OR color_configurations.property_5 = '')
+          LEFT JOIN lstBarcodes ON lstBarcodes.product_id = product._id
+          LEFT JOIN color_configurations ON (SELECT COUNT(*) FROM color_connections WHERE productId=product._id AND colorId=color_configurations.id)>0
         WHERE 
           1=1
           ${query != null && query != '' ? "AND product.name LIKE '%${query.replaceAll(" ", "%")}%'" : ''}
@@ -133,11 +136,13 @@ class MProduct extends BaseModel {
     ) WHERE 1=1
         ${stockQuery != '' ? 'AND $stockQuery' : ''}
         ${minStockQuery != '' ? 'AND $minStockQuery' : ''}
+        ${ids != null ? 'AND _id IN(${ids.map((e) => "'$e'").join(', ')})' : ''}
+        GROUP BY _id
         ORDER BY $orderBy
     ''';
-    debugPrint(sqlQuery);
+    // debugPrint(sqlQuery);
     final cursor = await db.rawQuery(sqlQuery);
-    final data = cursor.map((e) => MProduct(json: e)).toList();
+    final data = cursor.map((e) => MProduct(json: Map.from(e))).toList();
     return data;
   }
 
@@ -251,5 +256,66 @@ class MProduct extends BaseModel {
     );
     propertiesUnique.addAll(properties5.map((e) => e['property_5'].toString()));
     return propertiesUnique;
+  }
+
+  Future<void> changeColor(MColor? value) async {
+    final db = await AppDatabase().database;
+    await db.transaction((txn) async {
+      await txn.delete(
+        MColorConnection.tableName,
+        where: "productId LIKE ?",
+        whereArgs: [json['_id']],
+      );
+      if (value != null) {
+        await txn.insert(MColorConnection.tableName, {
+          "productId": json['_id'],
+          "colorId": value.id,
+        });
+        json['colorName'] = value.name;
+        json['fontColor'] = value.fontColor;
+        json['backgroundColor'] = value.backgroundColor;
+      } else {
+        json['colorName'] = null;
+        json['fontColor'] = null;
+        json['backgroundColor'] = null;
+      }
+      return true;
+    });
+  }
+
+  static Future<void> changeColorMultiple({
+    required List<MProduct> products,
+    required MColor? color,
+  }) async {
+    final db = await AppDatabase().database;
+    await db.transaction((txn) async {
+      await txn.delete(
+        MColorConnection.tableName,
+        where: "productId IN (?)",
+        whereArgs: [products.map((e) => e.json['_id']).join(', ')],
+      );
+      for (var product in products) {
+        if (color != null) {
+          await txn.insert(MColorConnection.tableName, {
+            "productId": product.json['_id'],
+            "colorId": color.id,
+          });
+          product.json['colorName'] = color.name;
+          product.json['fontColor'] = color.fontColor;
+          product.json['backgroundColor'] = color.backgroundColor;
+        } else {
+          product.json['colorName'] = null;
+          product.json['fontColor'] = null;
+          product.json['backgroundColor'] = null;
+        }
+      }
+      return true;
+    });
+  }
+
+  static Future<MProduct> getById(String id) async {
+    final db = await AppDatabase().database;
+    final c = await db.query(tableName, where: "_id = '$id'");
+    return MProduct(json: Map.from(c.first ?? {}));
   }
 }

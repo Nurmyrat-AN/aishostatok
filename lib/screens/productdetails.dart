@@ -16,8 +16,10 @@ class ProductDetails extends StatefulWidget {
 class _PriceControllerModel {
   final priceForBuyController = TextEditingController();
   final priceForSaleController = TextEditingController();
+  final priceForMinimumSaleController = TextEditingController();
   final priceForBuyFocusNode = FocusNode();
   final priceForSaleFocusNode = FocusNode();
+  final priceForMinimumSaleFocusNode = FocusNode();
   final MCurrency currency;
 
   _PriceControllerModel({required this.currency});
@@ -26,7 +28,9 @@ class _PriceControllerModel {
 class _ProductDetails extends State<ProductDetails> {
   MProduct _product = MProduct(json: {});
   final pricePercentOfSaleController = TextEditingController();
+  final pricePercentOfMinimumSaleController = TextEditingController();
   final percentFocused = FocusNode();
+  final percentMinimumFocused = FocusNode();
   final List<_PriceControllerModel> _priceControllerModels = [];
   double _defaultCurrencyRate = 1;
   MColor? _color;
@@ -56,6 +60,26 @@ class _ProductDetails extends State<ProductDetails> {
       }
     });
 
+    pricePercentOfMinimumSaleController.text = ((_product
+                        .json['price_minimum_for_sale'] /
+                    _product.json['price_base_for_buying'] -
+                1) *
+            100)
+        .toStringAsFixed(2);
+
+    pricePercentOfMinimumSaleController.addListener(() {
+      if (!percentMinimumFocused.hasFocus) return;
+      final percent = double.tryParse(pricePercentOfMinimumSaleController.text);
+      for (var e in _priceControllerModels) {
+        e
+            .priceForMinimumSaleController
+            .text = ((double.tryParse(e.priceForBuyController.text) ?? 0) *
+                ((percent ?? 0) + 100) /
+                100)
+            .toStringAsFixed(2);
+      }
+    });
+
     MCurrency.getAllWithRate().then((value) {
       _defaultCurrencyRate =
           value
@@ -67,6 +91,9 @@ class _ProductDetails extends State<ProductDetails> {
 
           model.priceForBuyController.addListener(_buyingListener(model));
           model.priceForSaleController.addListener(_saleListener(model));
+          model.priceForMinimumSaleController.addListener(
+            _minimumSaleListener(model),
+          );
 
           model.priceForBuyController.text = (_product
                       .json['price_base_for_buying'] /
@@ -125,51 +152,134 @@ class _ProductDetails extends State<ProductDetails> {
                 title: Text(
                   "Alyş baha: ${_product.json['price_base_for_buying']} ${_product.json['currencyName']}\nSatyş baha: ${_product.json['price_base_for_sale']} ${_product.json['currencyName']}",
                 ),
-                trailing: Text(
-                  "${widget.product.percentForSale.toStringAsFixed(2)} %",
+                trailing: Column(
+                  children: [
+                    Text(
+                      "${widget.product.percentForSale.toStringAsFixed(2)} %",
+                    ),
+                    Text(
+                      "${widget.product.percentForMinimumSale.toStringAsFixed(2)} %",
+                    ),
+                  ],
                 ),
               ),
               SizedBox(height: 16),
-              TextField(
-                controller: pricePercentOfSaleController,
-                focusNode: percentFocused,
-                decoration: InputDecoration(
-                  labelText: "Satyş baha göterimi",
-                  suffix: Text('%', style: TextStyle(fontSize: 12)),
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: pricePercentOfSaleController,
+                      focusNode: percentFocused,
+                      decoration: InputDecoration(
+                        labelText: "Satyş baha göterimi",
+                        helper: Text(
+                          "Kone satyş baha göterimi: ${widget.product.percentForSale.toStringAsFixed(2)}",
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontStyle: FontStyle.italic,
+                            fontSize: 12,
+                          ),
+                        ),
+
+                        suffix: Text('%', style: TextStyle(fontSize: 12)),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: TextField(
+                      controller: pricePercentOfMinimumSaleController,
+                      focusNode: percentMinimumFocused,
+                      decoration: InputDecoration(
+                        labelText: "Minimum satyş baha göterimi",
+                        helper: Text(
+                          "Kone minimum satyş baha göterimi: ${widget.product.percentForMinimumSale.toStringAsFixed(2)}",
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontStyle: FontStyle.italic,
+                            fontSize: 12,
+                          ),
+                        ),
+
+                        suffix: Text('%', style: TextStyle(fontSize: 12)),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               SizedBox(height: 16),
               ..._priceControllerModels.map(
-                (e) => Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: e.priceForBuyController,
-                        focusNode: e.priceForBuyFocusNode,
-                        decoration: InputDecoration(
-                          labelText: "Alyş baha",
-                          suffix: Text(
-                            e.currency.json['name'].toString(),
-                            style: TextStyle(fontSize: 12),
+                (e) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: e.priceForBuyController,
+                          focusNode: e.priceForBuyFocusNode,
+                          decoration: InputDecoration(
+                            labelText: "Alyş baha",
+                            helper: Text(
+                              "Kone alyş bahasy: ${(widget.product.json['price_base_for_buying'] / _defaultCurrencyRate * e.currency.json['rate']).toStringAsFixed(2)}",
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontStyle: FontStyle.italic,
+                                fontSize: 12,
+                              ),
+                            ),
+                            suffix: Text(
+                              e.currency.json['name'].toString(),
+                              style: TextStyle(fontSize: 12),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    SizedBox(width: 26),
-                    Expanded(
-                      child: TextField(
-                        controller: e.priceForSaleController,
-                        focusNode: e.priceForSaleFocusNode,
-                        decoration: InputDecoration(
-                          labelText: "Satyş baha",
-                          suffix: Text(
-                            e.currency.name,
-                            style: TextStyle(fontSize: 12),
+                      SizedBox(width: 26),
+                      Expanded(
+                        child: TextField(
+                          controller: e.priceForSaleController,
+                          focusNode: e.priceForSaleFocusNode,
+                          decoration: InputDecoration(
+                            labelText: "Satyş baha",
+                            helper: Text(
+                              "Kone satyş bahasy: ${(widget.product.json['price_base_for_sale'] / _defaultCurrencyRate * e.currency.json['rate']).toStringAsFixed(2)}",
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontStyle: FontStyle.italic,
+                                fontSize: 12,
+                              ),
+                            ),
+                            suffix: Text(
+                              e.currency.name,
+                              style: TextStyle(fontSize: 12),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                      SizedBox(width: 26),
+                      Expanded(
+                        child: TextField(
+                          controller: e.priceForMinimumSaleController,
+                          focusNode: e.priceForMinimumSaleFocusNode,
+                          decoration: InputDecoration(
+                            labelText: "Minimum satyş baha",
+                            helper: Text(
+                              "Kone minimum satyş bahasy: ${(widget.product.json['price_minimum_for_sale'] / _defaultCurrencyRate * e.currency.json['rate']).toStringAsFixed(2)}",
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontStyle: FontStyle.italic,
+                                fontSize: 12,
+                              ),
+                            ),
+                            suffix: Text(
+                              e.currency.name,
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               SizedBox(height: 26),
@@ -208,7 +318,7 @@ class _ProductDetails extends State<ProductDetails> {
                       try {
                         await AishManager().updateProduct(
                           id: _product.json['_id'],
-                          color: _color,
+                          priceForMinimumSale: 0,
                           priceForBuy: 0,
                           priceForSale: 0,
                         );
@@ -271,7 +381,8 @@ class _ProductDetails extends State<ProductDetails> {
     builder: (context, snapshot) {
       final colors = snapshot.data ?? [];
       return DropdownButton<MColor>(
-        onChanged: (value) {
+        onChanged: (value) async {
+          await widget.product.changeColor(value);
           setState(() {
             _color = value;
           });
@@ -342,6 +453,15 @@ class _ProductDetails extends State<ProductDetails> {
                   100) /
               100)
           .toStringAsFixed(2);
+
+      e
+          .priceForMinimumSaleController
+          .text = ((double.tryParse(e.priceForBuyController.text) ?? 0) *
+              ((double.tryParse(pricePercentOfMinimumSaleController.text) ??
+                      0) +
+                  100) /
+              100)
+          .toStringAsFixed(2);
     }
   };
 
@@ -366,5 +486,28 @@ class _ProductDetails extends State<ProductDetails> {
       }
     }
     pricePercentOfSaleController.text = percent.toStringAsFixed(2);
+  };
+  VoidCallback _minimumSaleListener(_PriceControllerModel model) => () {
+    if (!model.priceForMinimumSaleFocusNode.hasFocus) return;
+    final priceSale =
+        double.tryParse(model.priceForMinimumSaleController.text) ?? 0;
+
+    final percent =
+        (((priceSale /
+                    ((double.tryParse(model.priceForBuyController.text) ??
+                        1))) -
+                1) *
+            100);
+    for (var e in _priceControllerModels) {
+      if (!e.priceForMinimumSaleFocusNode.hasFocus) {
+        e
+            .priceForMinimumSaleController
+            .text = ((double.tryParse(e.priceForBuyController.text) ?? 0) *
+                (percent + 100) /
+                100)
+            .toStringAsFixed(2);
+      }
+    }
+    pricePercentOfMinimumSaleController.text = percent.toStringAsFixed(2);
   };
 }

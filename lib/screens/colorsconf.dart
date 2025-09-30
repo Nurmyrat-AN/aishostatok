@@ -15,11 +15,11 @@ class _ColorsConfiguration extends State<ColorsConfiguration> {
   MColor? color;
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _property_1 = TextEditingController();
-  final _property_2 = TextEditingController();
-  final _property_3 = TextEditingController();
-  final _property_4 = TextEditingController();
-  final _property_5 = TextEditingController();
+  // final _property_1 = TextEditingController();
+  // final _property_2 = TextEditingController();
+  // final _property_3 = TextEditingController();
+  // final _property_4 = TextEditingController();
+  // final _property_5 = TextEditingController();
   String _backgroundColor = "#FFFFFFFF";
   String _fontColor = "#FF000000";
   bool _isLoading = false;
@@ -29,11 +29,11 @@ class _ColorsConfiguration extends State<ColorsConfiguration> {
     super.initState();
     color = widget.color;
     _nameController.text = color?.name ?? "";
-    _property_1.text = color?.property_1 ?? "";
-    _property_2.text = color?.property_2 ?? "";
-    _property_3.text = color?.property_3 ?? "";
-    _property_4.text = color?.property_4 ?? "";
-    _property_5.text = color?.property_5 ?? "";
+    // _property_1.text = color?.property_1 ?? "";
+    // _property_2.text = color?.property_2 ?? "";
+    // _property_3.text = color?.property_3 ?? "";
+    // _property_4.text = color?.property_4 ?? "";
+    // _property_5.text = color?.property_5 ?? "";
     _backgroundColor = color?.backgroundColor ?? "#FFFFFFFF";
     _fontColor = color?.fontColor ?? "#FF000000";
   }
@@ -64,58 +64,58 @@ class _ColorsConfiguration extends State<ColorsConfiguration> {
                       SizedBox(height: 16),
                       _buildColors(context, color),
                       SizedBox(height: 16),
-                      ExpansionTile(
-                        title: Text("Aýratynlyklar"),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: BorderSide(color: Colors.grey),
-                        ),
-                        collapsedShape: RoundedRectangleBorder(
-                          side: BorderSide.none,
-                        ),
-                        childrenPadding: EdgeInsets.all(8),
-                        children: [
-                          TextFormField(
-                            controller: _property_1,
-                            decoration: InputDecoration(
-                              labelText: "Aýratynlyk 1",
-                            ),
-                            validator: emptyValidator,
-                          ),
-                          SizedBox(height: 8),
-                          TextFormField(
-                            controller: _property_2,
-                            decoration: InputDecoration(
-                              labelText: "Aýratynlyk 2",
-                            ),
-                            validator: emptyValidator,
-                          ),
-                          SizedBox(height: 8),
-                          TextFormField(
-                            controller: _property_3,
-                            decoration: InputDecoration(
-                              labelText: "Aýratynlyk 3",
-                            ),
-                            validator: emptyValidator,
-                          ),
-                          SizedBox(height: 8),
-                          TextFormField(
-                            controller: _property_4,
-                            decoration: InputDecoration(
-                              labelText: "Aýratynlyk 4",
-                            ),
-                            validator: emptyValidator,
-                          ),
-                          SizedBox(height: 8),
-                          TextFormField(
-                            controller: _property_5,
-                            decoration: InputDecoration(
-                              labelText: "Aýratynlyk 5",
-                            ),
-                            validator: emptyValidator,
-                          ),
-                        ],
-                      ),
+                      // ExpansionTile(
+                      //   title: Text("Aýratynlyklar"),
+                      //   shape: RoundedRectangleBorder(
+                      //     borderRadius: BorderRadius.circular(8),
+                      //     side: BorderSide(color: Colors.grey),
+                      //   ),
+                      //   collapsedShape: RoundedRectangleBorder(
+                      //     side: BorderSide.none,
+                      //   ),
+                      //   childrenPadding: EdgeInsets.all(8),
+                      //   children: [
+                      //     TextFormField(
+                      //       controller: _property_1,
+                      //       decoration: InputDecoration(
+                      //         labelText: "Aýratynlyk 1",
+                      //       ),
+                      //       validator: emptyValidator,
+                      //     ),
+                      //     SizedBox(height: 8),
+                      //     TextFormField(
+                      //       controller: _property_2,
+                      //       decoration: InputDecoration(
+                      //         labelText: "Aýratynlyk 2",
+                      //       ),
+                      //       validator: emptyValidator,
+                      //     ),
+                      //     SizedBox(height: 8),
+                      //     TextFormField(
+                      //       controller: _property_3,
+                      //       decoration: InputDecoration(
+                      //         labelText: "Aýratynlyk 3",
+                      //       ),
+                      //       validator: emptyValidator,
+                      //     ),
+                      //     SizedBox(height: 8),
+                      //     TextFormField(
+                      //       controller: _property_4,
+                      //       decoration: InputDecoration(
+                      //         labelText: "Aýratynlyk 4",
+                      //       ),
+                      //       validator: emptyValidator,
+                      //     ),
+                      //     SizedBox(height: 8),
+                      //     TextFormField(
+                      //       controller: _property_5,
+                      //       decoration: InputDecoration(
+                      //         labelText: "Aýratynlyk 5",
+                      //       ),
+                      //       validator: emptyValidator,
+                      //     ),
+                      //   ],
+                      // ),
                     ],
                   ),
         ),
@@ -150,11 +150,11 @@ class _ColorsConfiguration extends State<ColorsConfiguration> {
     });
     final newColor = widget.color ?? MColor(json: {});
     newColor.json['name'] = _nameController.text;
-    newColor.json['property_1'] = _property_1.text;
-    newColor.json['property_2'] = _property_2.text;
-    newColor.json['property_3'] = _property_3.text;
-    newColor.json['property_4'] = _property_4.text;
-    newColor.json['property_5'] = _property_5.text;
+    // newColor.json['property_1'] = _property_1.text;
+    // newColor.json['property_2'] = _property_2.text;
+    // newColor.json['property_3'] = _property_3.text;
+    // newColor.json['property_4'] = _property_4.text;
+    // newColor.json['property_5'] = _property_5.text;
     newColor.json['backgroundColor'] = _backgroundColor;
     newColor.json['fontColor'] = _fontColor;
     try {

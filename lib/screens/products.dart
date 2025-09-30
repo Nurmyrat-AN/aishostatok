@@ -1,6 +1,3 @@
-// import 'dart:io';
-// import 'dart:typed_data';
-
 import 'package:aishostatok/database/aishmanager.dart';
 import 'package:aishostatok/database/models/currency.dart';
 import 'package:aishostatok/database/models/mcolor.dart';
@@ -10,6 +7,7 @@ import 'package:aishostatok/database/models/warehouse.dart';
 import 'package:aishostatok/screens/colorslist.dart';
 import 'package:aishostatok/screens/currencies.dart';
 import 'package:aishostatok/screens/loadingprogress.dart';
+import 'package:aishostatok/screens/print.dart';
 import 'package:aishostatok/screens/productdetails.dart';
 import 'package:aishostatok/screens/serverip.dart';
 import 'package:aishostatok/utils/export.dart';
@@ -34,6 +32,7 @@ class _ProductsScreen extends State<ProductsScreen> {
   Future<List<MColor>> _colorsFuture = MColor.getAll();
   final _searchController = TextEditingController();
   final _barcodeController = TextEditingController();
+  List<String>? selectedProducts;
   String? _orderBy = "name";
   MMeasure? _measure;
   MWarehouse? _warehouse;
@@ -73,11 +72,11 @@ class _ProductsScreen extends State<ProductsScreen> {
         measureId: _measure?.json['_id'],
         warehouseId: _warehouse?.json['_id'],
         currencyId: _currency?.json['_id'],
-        property_1: _color != null ? _color!.property_1 : _property_1,
-        property_2: _color != null ? _color!.property_2 : _property_2,
-        property_3: _color != null ? _color!.property_3 : _property_3,
-        property_4: _color != null ? _color!.property_4 : _property_4,
-        property_5: _color != null ? _color!.property_5 : _property_5,
+        // property_1: _color != null ? _color!.property_1 : _property_1,
+        // property_2: _color != null ? _color!.property_2 : _property_2,
+        // property_3: _color != null ? _color!.property_3 : _property_3,
+        // property_4: _color != null ? _color!.property_4 : _property_4,
+        // property_5: _color != null ? _color!.property_5 : _property_5,
         stock: _stock,
         minStock: _minStock,
       );
@@ -349,14 +348,32 @@ class _ProductsScreen extends State<ProductsScreen> {
 
                       return ListTile(
                         onTap: () async {
-                          final res = await showDialog(
+                          if (selectedProducts != null) {
+                            if (selectedProducts!.contains(
+                              product.json['_id'],
+                            )) {
+                              selectedProducts!.remove(product.json['_id']);
+                            } else {
+                              selectedProducts!.add(product.json['_id']);
+                            }
+                            setState(() {});
+                            return;
+                          }
+                          await showDialog(
                             context: context,
                             builder:
                                 (context) => ProductDetails(product: product),
                           );
-                          if (res != null) {
-                            _fetchProducts();
-                          }
+                          final pr = await MProduct.getById(
+                            product.json['_id'],
+                          );
+
+                          product.json.addAll({...pr.json});
+                          setState(() {});
+                        },
+                        onLongPress: () {
+                          selectedProducts ??= [product.json['_id']];
+                          setState(() {});
                         },
                         leading: FutureBuilder(
                           future: _colorsFuture,
@@ -364,26 +381,29 @@ class _ProductsScreen extends State<ProductsScreen> {
                             final colors = snapshot.data ?? [];
                             return DropdownButton<MColor>(
                               onChanged: (value) async {
-                                await AishManager().updateProduct(
-                                  id: product.json['_id'],
-                                  color: value,
-                                );
-                                _fetchProducts();
+                                await product.changeColor(value);
+                                setState(() {});
                               },
                               underline: SizedBox(),
                               selectedItemBuilder: (context) => [SizedBox()],
                               menuWidth:
                                   MediaQuery.of(context).size.width - 100,
                               alignment: Alignment.bottomRight,
-                              items:
-                                  colors
-                                      .map(
-                                        (e) => DropdownMenuItem(
-                                          value: e,
-                                          child: Text(e.name),
-                                        ),
-                                      )
-                                      .toList(),
+                              items: [
+                                DropdownMenuItem(
+                                  value: null,
+                                  child: Text(
+                                    "Reňki arassala",
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                                ...colors.map(
+                                  (e) => DropdownMenuItem(
+                                    value: e,
+                                    child: Text(e.name),
+                                  ),
+                                ),
+                              ],
                               icon: CircleAvatar(
                                 radius: 12,
                                 backgroundColor:
@@ -436,38 +456,28 @@ class _ProductsScreen extends State<ProductsScreen> {
                             );
                           },
                         ),
-
-                        // leading: CircleAvatar(
-                        //   backgroundColor:
-                        //       product.json['backgroundColor'] == null
-                        //           ? Colors.white
-                        //           : Color(
-                        //             int.parse(
-                        //               product.json['backgroundColor'].substring(
-                        //                 1,
-                        //                 9,
-                        //               ),
-                        //               radix: 16,
-                        //             ),
-                        //           ),
-                        //   child: Text(
-                        //     product.name[0],
-                        //     style: TextStyle(
-                        //       color:
-                        //           product.json['fontColor'] == null
-                        //               ? Colors.grey
-                        //               : Color(
-                        //                 int.parse(
-                        //                   product.json['fontColor'].substring(
-                        //                     1,
-                        //                     9,
-                        //                   ),
-                        //                   radix: 16,
-                        //                 ),
-                        //               ),
-                        //     ),
-                        //   ),
-                        // ),
+                        trailing:
+                            selectedProducts != null
+                                ? Checkbox(
+                                  value: selectedProducts!.contains(
+                                    product.json['_id'],
+                                  ),
+                                  onChanged: (value) {
+                                    if (selectedProducts!.contains(
+                                      product.json['_id'],
+                                    )) {
+                                      selectedProducts!.remove(
+                                        product.json['_id'],
+                                      );
+                                    } else {
+                                      selectedProducts!.add(
+                                        product.json['_id'],
+                                      );
+                                    }
+                                    setState(() {});
+                                  },
+                                )
+                                : null,
                         title: Text(product.name),
                         subtitle: RichText(
                           text: TextSpan(
@@ -576,6 +586,107 @@ class _ProductsScreen extends State<ProductsScreen> {
     return AppBar(
       title: Text("Harytlar"),
       actions: [
+        if (selectedProducts != null && selectedProducts!.isNotEmpty)
+          FutureBuilder(
+            future: _colorsFuture,
+            builder: (context, snapshot) {
+              final colors = snapshot.data ?? [];
+              return DropdownButton<MColor>(
+                onChanged: (value) async {
+                  if (selectedProducts == null || selectedProducts!.isEmpty) {
+                    return;
+                  }
+                  await MProduct.changeColorMultiple(
+                    products:
+                        selectedProducts!.map<MProduct>((e) {
+                          MProduct product = _products.firstWhere(
+                            (element) => element.json['_id'] == e,
+                            orElse: () => MProduct(json: {"_id": e}),
+                          );
+
+                          return product;
+                        }).toList(),
+                    color: value,
+                  );
+
+                  setState(() {});
+                },
+                underline: SizedBox(),
+                selectedItemBuilder: (context) => [SizedBox()],
+                menuWidth: MediaQuery.of(context).size.width - 100,
+                alignment: Alignment.bottomRight,
+                items: [
+                  DropdownMenuItem(
+                    value: null,
+                    child: Text(
+                      "Reňki arassala",
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ),
+                  ...colors.map(
+                    (e) => DropdownMenuItem(value: e, child: Text(e.name)),
+                  ),
+                ],
+                icon: Icon(Icons.colorize),
+              );
+            },
+          ),
+        if (selectedProducts != null && selectedProducts!.isNotEmpty)
+          IconButton(
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) =>
+                          PrintScreen(selectedProducts: selectedProducts!),
+                ),
+              );
+            },
+            icon: Icon(Icons.print_outlined),
+          ),
+        if (selectedProducts != null)
+          DropdownButton(
+            items: [
+              DropdownMenuItem(
+                value: 'selectall',
+                child: Text("Ählisini saýla"),
+              ),
+              DropdownMenuItem(value: 'clearall', child: Text("Arassala")),
+              DropdownMenuItem(value: 'reverse', child: Text("Tersini saýla")),
+            ],
+            underline: SizedBox(),
+            menuWidth: 120,
+            selectedItemBuilder: (context) => [SizedBox()],
+            onChanged: (value) {
+              switch (value) {
+                case 'selectall':
+                  setState(() {
+                    selectedProducts =
+                        _products.map<String>((e) => e.json['_id']).toList();
+                  });
+                  break;
+                case 'clearall':
+                  setState(() {
+                    selectedProducts = null;
+                  });
+                  break;
+                case 'reverse':
+                  setState(() {
+                    selectedProducts =
+                        _products
+                            .map<String>((e) => e.json['_id'])
+                            .where(
+                              (element) => !selectedProducts!.contains(element),
+                            )
+                            .toList();
+                  });
+
+                  break;
+              }
+            },
+            icon: Icon(Icons.check_box_outlined),
+          ),
         IconButton(
           onPressed: () async {
             await showDialog(
@@ -590,7 +701,7 @@ class _ProductsScreen extends State<ProductsScreen> {
                         onDetect: (capture) {
                           final List<Barcode> barcodes = capture.barcodes;
                           if (barcodes.isNotEmpty) {
-                            _searchController.text =
+                            _barcodeController.text =
                                 barcodes.first.rawValue.toString();
                             Navigator.pop(context);
                           }

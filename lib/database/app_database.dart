@@ -78,6 +78,7 @@ class AppDatabase {
     await MProduct.createTable(db);
     await MStock.createTable(db);
     await MColor.createTable(db);
+    await MColorConnection.createTable(db);
     await AishManager().setLastSequenceNumber(0);
   }
 }

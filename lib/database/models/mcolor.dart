@@ -7,16 +7,6 @@ class MColor extends BaseModel {
 
   static String tableName = "color_configurations";
 
-  String get property_1 => json['property_1'] ?? "";
-
-  String get property_2 => json['property_2'] ?? "";
-
-  String get property_3 => json['property_3'] ?? "";
-
-  String get property_4 => json['property_4'] ?? "";
-
-  String get property_5 => json['property_5'] ?? "";
-
   String get backgroundColor => json['backgroundColor'] ?? "#FF000000";
 
   String get fontColor => json['fontColor'] ?? "#FF000000";
@@ -27,11 +17,6 @@ class MColor extends BaseModel {
       "CREATE TABLE $tableName ("
       "id INTEGER PRIMARY KEY, "
       "name TEXT,"
-      "property_1 TEXT,"
-      "property_2 TEXT,"
-      "property_3 TEXT,"
-      "property_4 TEXT,"
-      "property_5 TEXT,"
       "fontColor TEXT,"
       "backgroundColor TEXT"
       ")",
@@ -74,5 +59,21 @@ class MColor extends BaseModel {
   delete() async {
     final db = await AppDatabase().database;
     await db.delete(tableName, where: "id = ?", whereArgs: [id]);
+  }
+}
+
+class MColorConnection extends BaseModel {
+  MColorConnection({required super.json});
+  static String tableName = "color_connections";
+
+  static Future<void> createTable(Database db) async {
+    await db.execute("DROP TABLE IF EXISTS $tableName");
+    await db.execute(
+      "CREATE TABLE $tableName ("
+      "id INTEGER PRIMARY KEY, "
+      "colorId INTEGER,"
+      "productId TEXT"
+      ")",
+    );
   }
 }

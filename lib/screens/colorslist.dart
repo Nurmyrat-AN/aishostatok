@@ -92,7 +92,8 @@ class _ColorsList extends State<ColorsList> {
                           ),
                           title: Text(color.name),
                           subtitle: Text(
-                            "${color.property_1}, ${color.property_2}, ${color.property_3}, ${color.property_4}, ${color.property_5}",
+                            // "${color.property_1}, ${color.property_2}, ${color.property_3}, ${color.property_4}, ${color.property_5}",
+                            "COUNT: 55 "
                           ),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,

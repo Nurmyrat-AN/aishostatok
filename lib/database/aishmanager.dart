@@ -125,8 +125,8 @@ class AishManager {
 
   Future<void> updateProduct({
     required String id,
-    MColor? color,
     double? priceForSale,
+    double? priceForMinimumSale,
     double? priceForBuy,
   }) async {
     final db = await AppDatabase().database;
@@ -138,18 +138,6 @@ class AishManager {
           .timeout(Duration(seconds: 3));
       final data = jsonDecode(response.body);
       final product = data[0];
-      if (color != null) {
-        product['property_1'] =
-            color.property_1 == '' ? product['property_1'] : color.property_1;
-        product['property_2'] =
-            color.property_2 == '' ? product['property_2'] : color.property_2;
-        product['property_3'] =
-            color.property_3 == '' ? product['property_3'] : color.property_3;
-        product['property_4'] =
-            color.property_4 == '' ? product['property_4'] : color.property_4;
-        product['property_5'] =
-            color.property_5 == '' ? product['property_5'] : color.property_5;
-      }
       // if (priceForSale != null) {
       //   product['price_base_for_sale'] = priceForSale;
       // }
@@ -202,11 +190,6 @@ class AishManager {
           whereArgs: [id],
         );
         final Map<String, dynamic> json = Map.from(cursor.first);
-        json['property_1'] = color?.property_1 ?? json['property_1'];
-        json['property_2'] = color?.property_2 ?? json['property_2'];
-        json['property_3'] = color?.property_3 ?? json['property_3'];
-        json['property_4'] = color?.property_4 ?? json['property_4'];
-        json['property_5'] = color?.property_5 ?? json['property_5'];
 
         await db.update('product', json, where: '_id = ?', whereArgs: [id]);
       } catch (e) {
