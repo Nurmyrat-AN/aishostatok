@@ -105,6 +105,12 @@ class _ProductDetails extends State<ProductDetails> {
                   _defaultCurrencyRate *
                   e.json['rate'])
               .toStringAsFixed(2);
+
+          model.priceForMinimumSaleController.text = (_product
+                      .json['price_minimum_for_sale'] /
+                  _defaultCurrencyRate *
+                  e.json['rate'])
+              .toStringAsFixed(2);
           return model;
         }),
       );
@@ -134,6 +140,8 @@ class _ProductDetails extends State<ProductDetails> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text("***   ${_product.json['barcode']}   ***"),
+              SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

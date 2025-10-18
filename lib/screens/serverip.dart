@@ -83,6 +83,35 @@ class _ServerIPConfigurationState extends State<ServerIPConfiguration> {
                     decoration: InputDecoration(
                       labelText: "Minimum galyndy uçin goşmaça aýratynlyk ady",
                       hintText: "minstock",
+                      suffix: PopupMenuButton(
+                        itemBuilder:
+                            (context) => [
+                              PopupMenuItem(
+                                value: "property_1",
+                                child: Text("Aýratynlyk 1"),
+                              ),
+                              PopupMenuItem(
+                                value: "property_2",
+                                child: Text("Aýratynlyk 2"),
+                              ),
+                              PopupMenuItem(
+                                value: "property_3",
+                                child: Text("Aýratynlyk 3"),
+                              ),
+                              PopupMenuItem(
+                                value: "property_4",
+                                child: Text("Aýratynlyk 4"),
+                              ),
+                              PopupMenuItem(
+                                value: "property_5",
+                                child: Text("Aýratynlyk 5"),
+                              ),
+                            ],
+                        onSelected: (value) {
+                          _minstockController.text = value;
+                        },
+                        child: Icon(Icons.abc_outlined),
+                      ),
                     ),
                   ),
                   SizedBox(height: 16),
@@ -151,7 +180,10 @@ class _ServerIPConfigurationState extends State<ServerIPConfiguration> {
                 }
               }
             },
-            child: Text("Ýerli bazany arassala", style: TextStyle(color: Colors.red)),
+            child: Text(
+              "Ýerli bazany arassala",
+              style: TextStyle(color: Colors.red),
+            ),
           ),
           TextButton(
             onPressed: () {

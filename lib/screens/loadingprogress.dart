@@ -145,15 +145,24 @@ class _LoadingProgressState extends State<LoadingProgress> {
         }
         if (tableName == "product") {
           var instock_mainmeasure = json['instock_mainmeasure'];
-          try{
-            List<dynamic> lstArbitraryProperties = json['lstArbitraryProperties'];
-            for(var arbitraryProperty in lstArbitraryProperties){
-              if(arbitraryProperty['Key'] == minStockAttribute){
-                instock_mainmeasure = arbitraryProperty['Value'];
-                break;
+          try {
+            if (minStockAttribute == 'property_1' ||
+                minStockAttribute == 'property_2' ||
+                minStockAttribute == 'property_3' ||
+                minStockAttribute == 'property_4' ||
+                minStockAttribute == 'property_5') {
+              instock_mainmeasure = json[minStockAttribute];
+            } else {
+              List<dynamic> lstArbitraryProperties =
+                  json['lstArbitraryProperties'];
+              for (var arbitraryProperty in lstArbitraryProperties) {
+                if (arbitraryProperty['Key'] == minStockAttribute) {
+                  instock_mainmeasure = arbitraryProperty['Value'];
+                  break;
+                }
               }
             }
-          }catch(e){}
+          } catch (e) {}
           final writeData = {
             "_id": json['_id'],
             "_isactive": json['_isactive'],
@@ -171,9 +180,13 @@ class _LoadingProgressState extends State<LoadingProgress> {
             "property_5": json['property_5'],
             "instock_mainmeasure": instock_mainmeasure,
           };
-          await txn.insert(tableName, writeData, conflictAlgorithm: ConflictAlgorithm.replace);
+          await txn.insert(
+            tableName,
+            writeData,
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
           final List<dynamic> barcodes = json['lstBarcodes'] ?? [];
-          if(barcodes.isNotEmpty) {
+          if (barcodes.isNotEmpty) {
             debugPrint(barcodes.toString());
           }
           for (var barcode in barcodes) {

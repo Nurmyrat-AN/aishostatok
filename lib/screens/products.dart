@@ -46,6 +46,7 @@ class _ProductsScreen extends State<ProductsScreen> {
   String? _stock;
   String? _minStock;
   List<MProduct> _products = [];
+  bool _noColor = false;
 
   @override
   initState() {
@@ -72,11 +73,12 @@ class _ProductsScreen extends State<ProductsScreen> {
         measureId: _measure?.json['_id'],
         warehouseId: _warehouse?.json['_id'],
         currencyId: _currency?.json['_id'],
-        property_1:  _property_1,
-        property_2:  _property_2,
-        property_3:  _property_3,
-        property_4:  _property_4,
-        property_5:  _property_5,
+        property_1: _property_1,
+        property_2: _property_2,
+        property_3: _property_3,
+        property_4: _property_4,
+        property_5: _property_5,
+        noColor: _noColor,
         colorId: _color?.id,
         stock: _stock,
         minStock: _minStock,
@@ -200,6 +202,17 @@ class _ProductsScreen extends State<ProductsScreen> {
                 icon: Icon(Icons.filter_alt_outlined),
               ),
             ],
+          ),
+          SizedBox(height: 16),
+          CheckboxListTile(
+            value: _noColor,
+            onChanged: (value) {
+              setState(() {
+                _noColor = value!;
+                _fetchProducts();
+              });
+            },
+            title: Text("Diňe reňksizler"),
           ),
           SizedBox(height: 16),
           SingleChildScrollView(
@@ -339,7 +352,7 @@ class _ProductsScreen extends State<ProductsScreen> {
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return Center(child: Text("Maglumat ýok"));
                 }
-                _products = snapshot.data! ?? [];
+                _products = snapshot.data ?? [];
                 return RefreshIndicator(
                   onRefresh: () async => _fetchProducts(),
                   child: ListView.builder(
@@ -368,7 +381,6 @@ class _ProductsScreen extends State<ProductsScreen> {
                           final pr = await MProduct.getById(
                             product.json['_id'],
                           );
-
                           product.json.addAll({...pr.json});
                           setState(() {});
                         },
@@ -486,7 +498,7 @@ class _ProductsScreen extends State<ProductsScreen> {
                               TextSpan(
                                 style: TextStyle(color: Colors.black54),
                                 text:
-                                    "${product.json['price_base_for_sale']} ${product.json['currencyName']}\n ${product.json['stock_in_main_measure']} ${product.json['measureName']}   ",
+                                    "${product.json['barcode']}\n${product.json['price_base_for_sale']} ${product.json['currencyName']}\n ${product.json['stock_in_main_measure']} ${product.json['measureName']}   ",
                               ),
                               TextSpan(
                                 style: TextStyle(
@@ -663,7 +675,7 @@ class _ProductsScreen extends State<ProductsScreen> {
               switch (value) {
                 case 'selectall':
                   setState(() {
-                    selectedProducts =
+                    selectedProducts = 
                         _products.map<String>((e) => e.json['_id']).toList();
                   });
                   break;

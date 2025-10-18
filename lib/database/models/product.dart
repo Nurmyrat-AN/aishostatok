@@ -97,6 +97,7 @@ class MProduct extends BaseModel {
     String? barcode,
     List<String>? ids,
     int? colorId,
+    bool? noColor = false,
   }) async {
     final db = await AppDatabase().database;
     String stockQuery = numberQuery(
@@ -140,6 +141,7 @@ class MProduct extends BaseModel {
         ${minStockQuery != '' ? 'AND $minStockQuery' : ''}
         ${ids != null ? 'AND _id IN(${ids.map((e) => "'$e'").join(', ')})' : ''}
         ${colorId != null ? ' AND colorId = $colorId' : ''}
+        ${noColor == true ? ' AND (SELECT COUNT(*) FROM color_connections WHERE productId=_id)=0' : ''}
         GROUP BY _id
         ORDER BY $orderBy
     ''';
@@ -292,12 +294,12 @@ class MProduct extends BaseModel {
   }) async {
     final db = await AppDatabase().database;
     await db.transaction((txn) async {
-      await txn.delete(
-        MColorConnection.tableName,
-        where: "productId IN (?)",
-        whereArgs: [products.map((e) => e.json['_id']).join(', ')],
-      );
       for (var product in products) {
+        await txn.delete(
+          MColorConnection.tableName,
+          where: "productId LIKE ?",
+          whereArgs: [product.json['_id']],
+        );
         if (color != null) {
           await txn.insert(MColorConnection.tableName, {
             "productId": product.json['_id'],

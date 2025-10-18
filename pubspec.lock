@@ -262,6 +262,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.0.0"
+  flutter_multi_slider:
+    dependency: "direct main"
+    description:
+      name: flutter_multi_slider
+      sha256: "3c4603999f5c399b57b5a85086cf92c8870e726fe07fd63bc3968bd3e564518b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.1"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
