@@ -326,12 +326,12 @@ class _ProductDetails extends State<ProductDetails> {
                       try {
                         await AishManager().updateProduct(
                           id: _product.json['_id'],
-                          priceForMinimumSale: 0,
-                          priceForBuy: 0,
-                          priceForSale: 0,
+                          priceForMinimumSale: 5,
+                          priceForBuy: 5,
+                          priceForSale: 5,
                         );
                         Navigator.pop(context);
-                        Navigator.pop(context, true);
+                        // Navigator.pop(context, true);
                       } catch (e) {
                         debugPrint(e.toString());
                         Navigator.pop(context);

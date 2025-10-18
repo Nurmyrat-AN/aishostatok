@@ -55,6 +55,7 @@ dependencies:
   printing: ^5.14.2
   pdf: ^3.11.3
   flutter_multi_slider: ^2.0.1
+  flutter_json_viewer: ^1.0.1
 
 dev_dependencies:
   flutter_test:

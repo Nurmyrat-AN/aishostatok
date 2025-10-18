@@ -108,46 +108,37 @@ class MProduct extends BaseModel {
       colName: "(stock_in_main_measure - instock_mainmeasure)",
       value: minStock,
     );
-    final sqlQuery = '''
-    SELECT *, (stock_in_main_measure - instock_mainmeasure) as difference_in_main_measure FROM (
-        SELECT 
-          product.*, 
-          ${warehouseId != null ? "COALESCE((SELECT SUM(stock_in_main_measure) FROM stock WHERE warehouse_id = '$warehouseId' AND product_id = product._id), 0)" : 'product.stock_in_main_measure'} as stock_in_main_measure,
-          currency.name as currencyName, 
-          measure.name as measureName,
-          color_configurations.name as colorName,
-          color_configurations.backgroundColor as backgroundColor,
-          color_configurations.fontColor as fontColor,
-          color_configurations.id as colorId,
-          lstBarcodes.barcode as barcode
-        FROM product 
-          LEFT JOIN currency ON currency._id = product.currency 
-          LEFT JOIN measure ON measure._id = product.measure
-          LEFT JOIN lstBarcodes ON lstBarcodes.product_id = product._id
-          LEFT JOIN color_configurations ON (SELECT COUNT(*) FROM color_connections WHERE productId=product._id AND colorId=color_configurations.id)>0
-        WHERE 
-          1=1
-          ${query != null && query != '' ? "AND product.name LIKE '%${query.replaceAll(" ", "%")}%'" : ''}
-          ${barcode != null && barcode != '' ? "AND product._id IN (SELECT product_id FROM lstBarcodes WHERE barcode LIKE '$barcode')" : ''}
-          ${currencyId != null ? "AND currency = '$currencyId'" : ''}
-          ${measureId != null ? "AND measure = '$measureId'" : ''}
-          ${property_1 != null && property_1 != '' ? "AND product.property_1 LIKE '$property_1'" : ''}
-          ${property_2 != null && property_2 != '' ? "AND product.property_2 LIKE '$property_2'" : ''}
-          ${property_3 != null && property_3 != '' ? "AND product.property_3 LIKE '$property_3'" : ''}
-          ${property_4 != null && property_4 != '' ? "AND product.property_4 LIKE '$property_4'" : ''}
-          ${property_5 != null && property_5 != '' ? "AND product.property_5 LIKE '$property_5'" : ''}
-    ) WHERE 1=1
-        ${stockQuery != '' ? 'AND $stockQuery' : ''}
+    final pIds = [];
+
+    if (barcode != null && barcode != '') {
+      final bCursor = await db.query(
+        'lstBarcodes',
+        where: "barcode LIKE '$barcode'",
+      );
+      pIds.addAll(bCursor.map((e) => e['product_id']).toList());
+    }
+    final cursor = await db.query(
+      'cache',
+      where: '''
+        ${barcode != null && barcode != '' && pIds.isEmpty ? "1=0" : "1=1"}
+        ${stockQuery != '' ? 'AND $stockQuery' : ''}    
         ${minStockQuery != '' ? 'AND $minStockQuery' : ''}
-        ${ids != null ? 'AND _id IN(${ids.map((e) => "'$e'").join(', ')})' : ''}
-        ${colorId != null ? ' AND colorId = $colorId' : ''}
-        ${noColor == true ? ' AND (SELECT COUNT(*) FROM color_connections WHERE productId=_id)=0' : ''}
-        GROUP BY _id
-        ORDER BY $orderBy
-    ''';
-    // debugPrint(sqlQuery);
-    final cursor = await db.rawQuery(sqlQuery);
+        ${noColor == true ? "AND colorId IS NULL" : ''}
+        ${noColor != true && colorId != null ? ' AND colorId = $colorId' : ''}
+        ${warehouseId != null ? "AND warehouseId = '$warehouseId'" : 'AND warehouseId IS NULL'}
+        ${measureId != null ? "AND measureId = '$measureId'" : ''}
+        ${currencyId != null ? "AND currencyId = '$currencyId'" : ''}
+        ${query != null && query != '' ? "AND name LIKE '%${query.replaceAll(" ", "%")}%'" : ''}
+        ${property_1 != null && property_1 != '' ? "AND property_1 LIKE '$property_1'" : ''}
+        ${property_2 != null && property_2 != '' ? "AND property_2 LIKE '$property_2'" : ''}
+        ${property_3 != null && property_3 != '' ? "AND property_3 LIKE '$property_3'" : ''}
+        ${property_4 != null && property_4 != '' ? "AND property_4 LIKE '$property_4'" : ''}
+        ${property_5 != null && property_5 != '' ? "AND property_5 LIKE '$property_5'" : ''}
+        ${pIds.isNotEmpty || ((ids ?? []).isNotEmpty) ? "AND _id IN (${[...(ids ?? []), ...pIds].map((e) => "'$e'").join(',')})" : ''}
+    ''',
+    );
     final data = cursor.map((e) => MProduct(json: Map.from(e))).toList();
+    // debugPrint(data[0].json.toString());
     return data;
   }
 
@@ -271,11 +262,25 @@ class MProduct extends BaseModel {
         where: "productId LIKE ?",
         whereArgs: [json['_id']],
       );
+      await txn.update(
+        "cache",
+        {
+          "colorId": value?.id,
+          "colorName": value?.name,
+          "fontColor": value?.fontColor,
+          "backgroundColor": value?.backgroundColor,
+        },
+        where: "_id = ?",
+        whereArgs: [json['_id']],
+      );
       if (value != null) {
         await txn.insert(MColorConnection.tableName, {
           "productId": json['_id'],
           "colorId": value.id,
         });
+
+        json['colorId'] = value.id;
+
         json['colorName'] = value.name;
         json['fontColor'] = value.fontColor;
         json['backgroundColor'] = value.backgroundColor;
@@ -298,6 +303,17 @@ class MProduct extends BaseModel {
         await txn.delete(
           MColorConnection.tableName,
           where: "productId LIKE ?",
+          whereArgs: [product.json['_id']],
+        );
+        await txn.update(
+          "cache",
+          {
+            "colorId": color?.id,
+            "colorName": color?.name,
+            "fontColor": color?.fontColor,
+            "backgroundColor": color?.backgroundColor,
+          },
+          where: "_id = ?",
           whereArgs: [product.json['_id']],
         );
         if (color != null) {

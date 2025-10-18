@@ -82,7 +82,7 @@ class _ServerIPConfigurationState extends State<ServerIPConfiguration> {
                     controller: _minstockController,
                     decoration: InputDecoration(
                       labelText: "Minimum galyndy uçin goşmaça aýratynlyk ady",
-                      hintText: "minstock",
+                      hintText: "\$aish_maximum_negative_stock",
                       suffix: PopupMenuButton(
                         itemBuilder:
                             (context) => [

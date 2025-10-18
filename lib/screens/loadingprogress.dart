@@ -2,7 +2,9 @@ import 'dart:convert';
 
 import 'package:aishostatok/database/aishmanager.dart';
 import 'package:aishostatok/database/app_database.dart';
+import 'package:aishostatok/database/models/mcache.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_json_viewer/flutter_json_viewer.dart';
 import 'package:sqflite/sqflite.dart';
 
 class LoadingProgress extends StatefulWidget {
@@ -17,6 +19,7 @@ class _LoadingProgressState extends State<LoadingProgress> {
   bool _isDisposed = false;
   String? _error;
   bool _isFinished = false;
+  dynamic _caches;
   final AishManager _aishManager = AishManager();
 
   @override
@@ -63,7 +66,17 @@ class _LoadingProgressState extends State<LoadingProgress> {
         });
         await _writeStocksToDb(stocksOfProducts);
         if (_isDisposed) return;
+        mainInfoStatus += "Ýerli baza ýazdyryldy\n";
+        setState(() {
+          _status = "$mainInfoStatus Ýerli keş taýýarlanýar...";
+        });
+        await MCache.prepareCache();
+        // setState(() {
+        //   _caches = caches;
+        // });
+        if (_isDisposed) return;
         await _aishManager.setLastUpdatedAt(DateTime.now().toIso8601String());
+        mainInfoStatus += "Ýerli keş taýýarlandy\n";
         mainInfoStatus +=
             "Soňky üýtgedilen senesi: ${DateTime.now().toIso8601String()}\n";
         setState(() {
@@ -186,9 +199,9 @@ class _LoadingProgressState extends State<LoadingProgress> {
             conflictAlgorithm: ConflictAlgorithm.replace,
           );
           final List<dynamic> barcodes = json['lstBarcodes'] ?? [];
-          if (barcodes.isNotEmpty) {
-            debugPrint(barcodes.toString());
-          }
+          // if (barcodes.isNotEmpty) {
+          //   debugPrint(barcodes.toString());
+          // }
           for (var barcode in barcodes) {
             await txn.insert("lstBarcodes", {
               "product_id": json['_id'],
@@ -206,7 +219,10 @@ class _LoadingProgressState extends State<LoadingProgress> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text("Ýüklenilýär"),
-      content: Text(_error ?? _status),
+      content:
+          _caches != null
+              ? SingleChildScrollView(child: JsonViewer(_caches))
+              : Text(_error ?? _status),
       actions: [
         TextButton(
           onPressed: () {

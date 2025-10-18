@@ -44,11 +44,6 @@ class MColor extends BaseModel {
         json: {
           "id": maps[i]['id'],
           "name": maps[i]['name'],
-          "property_1": maps[i]['property_1'],
-          "property_2": maps[i]['property_2'],
-          "property_3": maps[i]['property_3'],
-          "property_4": maps[i]['property_4'],
-          "property_5": maps[i]['property_5'],
           "fontColor": maps[i]['fontColor'],
           "backgroundColor": maps[i]['backgroundColor'],
         },

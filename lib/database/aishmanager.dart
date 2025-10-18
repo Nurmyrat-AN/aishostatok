@@ -108,7 +108,7 @@ class AishManager {
 
   Future<String> get minStockAttribute async {
     final pref = await SharedPreferences.getInstance();
-    return pref.getString('minstock') ?? 'minstock';
+    return pref.getString('minstock') ?? '\$aish_maximum_negative_stock';
   }
 
   clearDB() async {
@@ -138,23 +138,31 @@ class AishManager {
           .timeout(Duration(seconds: 3));
       final data = jsonDecode(response.body);
       final product = data[0];
-      // if (priceForSale != null) {
-      //   product['price_base_for_sale'] = priceForSale;
-      // }
-      // if (priceForBuy != null) {
-      //   product['price_base_for_buying'] = priceForBuy;
-      // }
+      if (priceForSale != null) {
+        product['price_base_for_sale'] = priceForSale;
+      }
+      if (priceForBuy != null) {
+        product['price_base_for_buying'] = priceForBuy;
+      }
+      if (priceForMinimumSale != null) {
+        product['price_minimum_for_sale'] = priceForMinimumSale;
+      }
+      product['name'] = product['name'] + ' . ';
+      product.remove('lstArbitraryProperties');
+
       final response2 = await http.post(
         Uri.parse("$serverIp/updatecacheobject"),
         body: jsonEncode(product),
       );
       final data2 = jsonDecode(response2.body);
+
       if (data2['ok'] != true) return;
       final response3 = await http.get(
         Uri.parse("$serverIp/cachedobjects?id=$id"),
       );
       final data3 = jsonDecode(response3.body);
       final json = data3[0];
+      debugPrint("\n\nData For Updating: $product\n\nResult Of Post Request: $data2 \n\nNew updated data via get request: $json");
       await db.transaction((txn) async {
         await txn.insert("product", {
           "_id": json['_id'],
@@ -183,6 +191,7 @@ class AishManager {
         return true;
       });
     } catch (e) {
+      debugPrint(e.toString());
       try {
         final cursor = await db.query(
           'product',

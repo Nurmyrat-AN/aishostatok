@@ -498,7 +498,7 @@ class _ProductsScreen extends State<ProductsScreen> {
                               TextSpan(
                                 style: TextStyle(color: Colors.black54),
                                 text:
-                                    "${product.json['barcode']}\n${product.json['price_base_for_sale']} ${product.json['currencyName']}\n ${product.json['stock_in_main_measure']} ${product.json['measureName']}   ",
+                                    "${product.json['barcode']??'---'}\n${product.json['price_base_for_sale']} ${product.json['currencyName']}\n ${product.json['warehouseName']}: ${product.json['stock_in_main_measure']} ${product.json['measureName']}   ",
                               ),
                               TextSpan(
                                 style: TextStyle(

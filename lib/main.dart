@@ -1,4 +1,5 @@
 import 'package:aishostatok/database/app_database.dart';
+import 'package:aishostatok/database/models/mcache.dart';
 import 'package:aishostatok/screens/products.dart';
 import 'package:flutter/material.dart';
 
@@ -7,6 +8,12 @@ void main() async {
   try {
     final db = await AppDatabase().database;
     // await AppDatabase().initializeDatabase(db);
+    try {
+      await db.query(MCache.tableName, limit: 1);
+    } catch (e) {
+      await MCache.createTable(db);
+      await MCache.prepareCache();
+    }
     debugPrint('Database initialized successfully!');
   } catch (e) {
     debugPrint('Error initializing database: $e');

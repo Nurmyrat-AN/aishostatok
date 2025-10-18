@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:aishostatok/database/aishmanager.dart';
 import 'package:aishostatok/database/models/currency.dart';
+import 'package:aishostatok/database/models/mcache.dart';
 import 'package:aishostatok/database/models/mcolor.dart';
 import 'package:aishostatok/database/models/measure.dart';
 import 'package:aishostatok/database/models/product.dart';
@@ -80,5 +81,6 @@ class AppDatabase {
     await MColor.createTable(db);
     await MColorConnection.createTable(db);
     await AishManager().setLastSequenceNumber(0);
+    await MCache.createTable(db);
   }
 }
