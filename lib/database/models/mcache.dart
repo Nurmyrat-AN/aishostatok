@@ -44,7 +44,7 @@ class MCache extends BaseModel {
   }
 
   static Future<Map<String, String>> _queryToMap(
-    Transaction txn,
+    Database txn,
     tableName,
   ) async {
     final Map<String, String> map = {};
@@ -57,58 +57,59 @@ class MCache extends BaseModel {
 
   static dynamic prepareCache() async {
     final db = await AppDatabase().database;
+    final measures = await _queryToMap(db, "measure");
+    final currencies = await _queryToMap(db, "currency");
+    final warehouses = await _queryToMap(db, "warehouse");
+    final bCursor = await db.query("lstBarcodes", groupBy: "product_id");
+    final Map<String, String> barcodes = {};
+    for (var row in bCursor) {
+      barcodes[row['product_id'].toString()] = row['barcode'].toString();
+    }
+
+    final cConCursor = await db.query("color_connections");
+    final Map<String, int> cConnections = {};
+    for (var row in cConCursor) {
+      cConnections[row['productId'].toString()] = int.parse(
+        row['colorId'].toString(),
+      );
+    }
+    final cCursor = await db.query(
+      "color_configurations",
+      where: "id IN (${cConnections.values.join(',')})",
+    );
+    final Map<int, MColor> colors = {};
+    for (var row in cCursor) {
+      colors[int.parse(row['id'].toString())] = MColor(json: Map.from(row));
+    }
+
+    final sCursor = await db.query("stock");
+    final Map<String, List<Map<String, dynamic>>> stocks = {};
+    for (var row in sCursor) {
+      final productId = row['product_id'].toString();
+      if (!stocks.containsKey(productId)) {
+        stocks[productId] = [
+          {
+            "warehouseId": null,
+            "warehouseName": "Ählisi",
+            "stock_in_main_measure": 0,
+          },
+        ];
+      }
+      stocks[productId]![0]['stock_in_main_measure'] +=
+          row['stock_in_main_measure'];
+
+      stocks[productId]!.add({
+        "warehouseId": row['warehouse_id'].toString(),
+        "warehouseName": warehouses[row['warehouse_id'].toString()],
+        "stock_in_main_measure": row['stock_in_main_measure'],
+      });
+    }
+
+    final products = await db.query("product");
+    final List<Map<String, dynamic>> caches = [];
     return await db.transaction((txn) async {
       await txn.delete(MCache.tableName);
-      final measures = await _queryToMap(txn, "measure");
-      final currencies = await _queryToMap(txn, "currency");
-      final warehouses = await _queryToMap(txn, "warehouse");
-      final bCursor = await txn.query("lstBarcodes", groupBy: "product_id");
-      final Map<String, String> barcodes = {};
-      for (var row in bCursor) {
-        barcodes[row['product_id'].toString()] = row['barcode'].toString();
-      }
 
-      final cConCursor = await txn.query("color_connections");
-      final Map<String, int> cConnections = {};
-      for (var row in cConCursor) {
-        cConnections[row['productId'].toString()] = int.parse(
-          row['colorId'].toString(),
-        );
-      }
-      final cCursor = await txn.query(
-        "color_configurations",
-        where: "id IN (${cConnections.values.join(',')})",
-      );
-      final Map<int, MColor> colors = {};
-      for (var row in cCursor) {
-        colors[int.parse(row['id'].toString())] = MColor(json: Map.from(row));
-      }
-
-      final sCursor = await txn.query("stock");
-      final Map<String, List<Map<String, dynamic>>> stocks = {};
-      for (var row in sCursor) {
-        final productId = row['product_id'].toString();
-        if (!stocks.containsKey(productId)) {
-          stocks[productId] = [
-            {
-              "warehouseId": null,
-              "warehouseName": "Ählisi",
-              "stock_in_main_measure": 0,
-            },
-          ];
-        }
-        stocks[productId]![0]['stock_in_main_measure'] +=
-            row['stock_in_main_measure'];
-
-        stocks[productId]!.add({
-          "warehouseId": row['warehouse_id'].toString(),
-          "warehouseName": warehouses[row['warehouse_id'].toString()],
-          "stock_in_main_measure": row['stock_in_main_measure'],
-        });
-      }
-
-      final products = await txn.query("product");
-      final List<Map<String, dynamic>> caches = [];
       for (var product in products) {
         final Map<String, dynamic> pMap = Map.from(product);
 
@@ -126,8 +127,10 @@ class MCache extends BaseModel {
         pMap['warehouseId'] = null;
         pMap['warehouseName'] = "Ählisi";
         pMap['stock_in_main_measure'] = 0;
+        pMap['instock_mainmeasure'] =
+            double.tryParse(pMap['instock_mainmeasure']) ?? 0;
         pMap['difference_in_main_measure'] =
-            pMap['stock_in_main_measure'] - (pMap['instock_mainmeasure'] ?? 0);
+            pMap['stock_in_main_measure'] - pMap['instock_mainmeasure'];
 
         if (!stocks.containsKey(product['_id'].toString())) {
           await txn.insert(MCache.tableName, pMap);

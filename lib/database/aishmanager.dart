@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:aishostatok/database/app_database.dart';
 import 'package:aishostatok/database/models/currency.dart';
+import 'package:aishostatok/database/models/mcache.dart';
 import 'package:aishostatok/database/models/mcolor.dart';
 import 'package:aishostatok/database/models/measure.dart';
 import 'package:aishostatok/database/models/product.dart';
@@ -119,6 +120,8 @@ class AishManager {
       await txn.delete(MMeasure.tableName);
       await txn.delete(MWarehouse.tableName);
       await txn.delete(MStock.tableName);
+      await txn.delete(MCache.tableName);
+      await txn.delete("lstBarcodes");
     });
     await setLastSequenceNumber(0);
   }

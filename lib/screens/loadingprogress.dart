@@ -71,9 +71,6 @@ class _LoadingProgressState extends State<LoadingProgress> {
           _status = "$mainInfoStatus Ýerli keş taýýarlanýar...";
         });
         await MCache.prepareCache();
-        // setState(() {
-        //   _caches = caches;
-        // });
         if (_isDisposed) return;
         await _aishManager.setLastUpdatedAt(DateTime.now().toIso8601String());
         mainInfoStatus += "Ýerli keş taýýarlandy\n";
@@ -88,6 +85,7 @@ class _LoadingProgressState extends State<LoadingProgress> {
       setState(() {
         _status = "$mainInfoStatus Ýerli baza ýazdyrylýar...";
       });
+
       lastSequenceNumber = await _writeToDb(data) ?? lastSequenceNumber;
       if (_isDisposed) return;
       await _aishManager.setLastSequenceNumber(lastSequenceNumber);
@@ -129,10 +127,12 @@ class _LoadingProgressState extends State<LoadingProgress> {
     int lastSequenceNumber = 0;
     final minStockAttribute = await AishManager().minStockAttribute;
     final db = await AppDatabase().database;
+
     await db.transaction((txn) async {
       for (var object in data) {
         lastSequenceNumber = object['_sequence_number'];
         final Map<String, dynamic> json = object;
+
 
         String tableName = json['OBJECT_TYPE'];
         if (tableName == "currency") {
@@ -142,6 +142,7 @@ class _LoadingProgressState extends State<LoadingProgress> {
             "name": json['name'],
           }, conflictAlgorithm: ConflictAlgorithm.replace);
         }
+
         if (tableName == "measure") {
           await txn.insert(tableName, {
             "_id": json['_id'],
@@ -156,8 +157,10 @@ class _LoadingProgressState extends State<LoadingProgress> {
             "name": json['name'],
           }, conflictAlgorithm: ConflictAlgorithm.replace);
         }
+
         if (tableName == "product") {
           var instock_mainmeasure = json['instock_mainmeasure'];
+
           try {
             if (minStockAttribute == 'property_1' ||
                 minStockAttribute == 'property_2' ||
@@ -176,6 +179,7 @@ class _LoadingProgressState extends State<LoadingProgress> {
               }
             }
           } catch (e) {}
+
           final writeData = {
             "_id": json['_id'],
             "_isactive": json['_isactive'],
