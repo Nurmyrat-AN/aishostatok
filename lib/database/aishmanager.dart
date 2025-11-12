@@ -2,11 +2,13 @@ import 'dart:convert';
 
 import 'package:aishostatok/database/app_database.dart';
 import 'package:aishostatok/database/models/currency.dart';
+import 'package:aishostatok/database/models/customer.dart';
 import 'package:aishostatok/database/models/mcache.dart';
 import 'package:aishostatok/database/models/mcolor.dart';
 import 'package:aishostatok/database/models/measure.dart';
 import 'package:aishostatok/database/models/product.dart';
 import 'package:aishostatok/database/models/stock.dart';
+import 'package:aishostatok/database/models/transaction.dart';
 import 'package:aishostatok/database/models/warehouse.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -24,6 +26,11 @@ class AishManager {
       _lastSequenceNumber = pref.getInt('last_sequence_number') ?? 0;
     }
     return _lastSequenceNumber!;
+  }
+
+  Future<int> get lastTransactionSequenceNumber async {
+    final pref = await SharedPreferences.getInstance();
+    return pref.getInt('last_transaction_sequence_number') ?? 0;
   }
 
   Future<String> get serverIp async {
@@ -59,6 +66,17 @@ class AishManager {
 
     final path = Uri.parse(
       "$serverIp/cachedobjects?since=$sequenceNumber&limit=$badgeSize",
+    );
+    return path;
+  }
+
+  Future<Uri> get transactionsUri async {
+    final serverIp = await this.serverIp;
+    final badgeSize = await this.badgeSize;
+    final sequenceNumber = await lastTransactionSequenceNumber;
+
+    final path = Uri.parse(
+      "$serverIp/transactions?since=$sequenceNumber&limit=$badgeSize&with_items=true",
     );
     return path;
   }
@@ -121,9 +139,18 @@ class AishManager {
       await txn.delete(MWarehouse.tableName);
       await txn.delete(MStock.tableName);
       await txn.delete(MCache.tableName);
+      try {
+        await txn.delete(MCustomer.tableName);
+        await txn.delete(MTransaction.tableName);
+      } catch (e) {
+        debugPrint(e.toString());
+      }
       await txn.delete("lstBarcodes");
     });
     await setLastSequenceNumber(0);
+    await setLastTransactionSequenceNumber(0);
+    await setLastUpdatedAt(DateTime.now().toIso8601String());
+    await MCache.prepareCache();
   }
 
   Future<void> updateProduct({
@@ -150,8 +177,7 @@ class AishManager {
       if (priceForMinimumSale != null) {
         product['price_minimum_for_sale'] = priceForMinimumSale;
       }
-      product['name'] = product['name'] + ' . ';
-      product.remove('lstArbitraryProperties');
+      // product.remove('lstArbitraryProperties');
 
       final response2 = await http.post(
         Uri.parse("$serverIp/updatecacheobject"),
@@ -165,7 +191,9 @@ class AishManager {
       );
       final data3 = jsonDecode(response3.body);
       final json = data3[0];
-      debugPrint("\n\nData For Updating: $product\n\nResult Of Post Request: $data2 \n\nNew updated data via get request: $json");
+      debugPrint(
+        "\n\nData For Updating: $product\n\nResult Of Post Request: $data2 \n\nNew updated data via get request: $json",
+      );
       await db.transaction((txn) async {
         await txn.insert("product", {
           "_id": json['_id'],
@@ -191,8 +219,10 @@ class AishManager {
             "barcode": barcode,
           }, conflictAlgorithm: ConflictAlgorithm.replace);
         }
+
         return true;
       });
+      await MCache.prepareCache();
     } catch (e) {
       debugPrint(e.toString());
       try {
@@ -213,5 +243,17 @@ class AishManager {
   setMinStockAttribute(String text) async {
     final pref = await SharedPreferences.getInstance();
     pref.setString('minstock', text);
+  }
+
+  Future<List<dynamic>> getTransactions() async {
+    final uri = await transactionsUri;
+    debugPrint(uri.toString());
+    final response = await http.get(uri);
+    return jsonDecode(response.body);
+  }
+
+  setLastTransactionSequenceNumber(int lastSequenceNumber) async {
+    final pref = await SharedPreferences.getInstance();
+    pref.setInt('last_transaction_sequence_number', lastSequenceNumber);
   }
 }

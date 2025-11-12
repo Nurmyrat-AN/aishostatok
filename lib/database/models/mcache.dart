@@ -105,7 +105,7 @@ class MCache extends BaseModel {
       });
     }
 
-    final products = await db.query("product");
+    final products = await db.query("product", where: "_isactive='active'");
     final List<Map<String, dynamic>> caches = [];
     return await db.transaction((txn) async {
       await txn.delete(MCache.tableName);
@@ -128,7 +128,7 @@ class MCache extends BaseModel {
         pMap['warehouseName'] = "Ählisi";
         pMap['stock_in_main_measure'] = 0;
         pMap['instock_mainmeasure'] =
-            double.tryParse(pMap['instock_mainmeasure']) ?? 0;
+            double.tryParse(pMap['instock_mainmeasure'].toString()) ?? 0;
         pMap['difference_in_main_measure'] =
             pMap['stock_in_main_measure'] - pMap['instock_mainmeasure'];
 

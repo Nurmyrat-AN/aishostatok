@@ -1,6 +1,7 @@
 import 'package:aishostatok/database/app_database.dart';
 import 'package:aishostatok/database/base_model.dart';
 import 'package:aishostatok/database/models/mcolor.dart';
+import 'package:aishostatok/database/models/transaction.dart';
 import 'package:aishostatok/utils/query.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:sqflite/sqflite.dart';
@@ -135,6 +136,7 @@ class MProduct extends BaseModel {
         ${property_4 != null && property_4 != '' ? "AND property_4 LIKE '$property_4'" : ''}
         ${property_5 != null && property_5 != '' ? "AND property_5 LIKE '$property_5'" : ''}
         ${pIds.isNotEmpty || ((ids ?? []).isNotEmpty) ? "AND _id IN (${[...(ids ?? []), ...pIds].map((e) => "'$e'").join(',')})" : ''}
+        ORDER BY $orderBy
     ''',
     );
     final data = cursor.map((e) => MProduct(json: Map.from(e))).toList();
@@ -338,5 +340,21 @@ class MProduct extends BaseModel {
     final db = await AppDatabase().database;
     final c = await db.query(tableName, where: "_id = '$id'");
     return MProduct(json: Map.from(c.first ?? {}));
+  }
+
+  Future<List<MTransaction>>? getTransactions() async {
+    final db = await AppDatabase().database;
+    final c = await db.rawQuery('''
+      SELECT 
+          transactions.*, 
+          warehouse.name as warehouse_name, 
+          customer.name as  customer_name
+      FROM transactions 
+        RIGHT JOIN customer ON transactions.customer_1 = customer._id
+        RIGHT JOIN warehouse ON transactions.warehouse_1 = warehouse._id
+      WHERE product = '${json['_id']}'
+      ORDER BY id DESC
+    ''');
+    return c.map((e) => MTransaction(json: Map.from(e))).toList();
   }
 }

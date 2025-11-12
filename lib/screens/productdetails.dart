@@ -2,6 +2,7 @@ import 'package:aishostatok/database/aishmanager.dart';
 import 'package:aishostatok/database/models/currency.dart';
 import 'package:aishostatok/database/models/mcolor.dart';
 import 'package:aishostatok/database/models/product.dart';
+import 'package:aishostatok/database/models/transaction.dart';
 import 'package:flutter/material.dart';
 
 class ProductDetails extends StatefulWidget {
@@ -35,11 +36,13 @@ class _ProductDetails extends State<ProductDetails> {
   double _defaultCurrencyRate = 1;
   MColor? _color;
   Future<List<MColor>>? _colors;
+  Future<List<MTransaction>>? _transactions;
 
   @override
   void initState() {
     super.initState();
     _product = widget.product;
+    _transactions = widget.product.getTransactions();
     _colors = MColor.getAll();
     pricePercentOfSaleController.text = ((_product.json['price_base_for_sale'] /
                     _product.json['price_base_for_buying'] -
@@ -135,224 +138,270 @@ class _ProductDetails extends State<ProductDetails> {
             bottomRight: Radius.circular(20),
           ),
         ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("***   ${_product.json['barcode']}   ***"),
-              SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Galyndy: ${_product.json['stock_in_main_measure']} ${_product.json['measureName']}",
-                  ),
-                  Text(
-                    "Minimum galyndy: ${_product.json['instock_mainmeasure']} ${_product.json['measureName']}",
-                  ),
-                ],
-              ),
-              SizedBox(height: 8),
-              ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  "Alyş baha: ${_product.json['price_base_for_buying']} ${_product.json['currencyName']}\nSatyş baha: ${_product.json['price_base_for_sale']} ${_product.json['currencyName']}",
-                ),
-                trailing: Column(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      "${widget.product.percentForSale.toStringAsFixed(2)} %",
+                    Text("***   ${_product.json['barcode']}   ***"),
+                    SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Galyndy: ${_product.json['stock_in_main_measure']} ${_product.json['measureName']}",
+                        ),
+                        Text(
+                          "Minimum galyndy: ${_product.json['instock_mainmeasure']} ${_product.json['measureName']}",
+                        ),
+                      ],
                     ),
-                    Text(
-                      "${widget.product.percentForMinimumSale.toStringAsFixed(2)} %",
+                    SizedBox(height: 8),
+                    ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        "Alyş baha: ${_product.json['price_base_for_buying']} ${_product.json['currencyName']}\nSatyş baha: ${_product.json['price_base_for_sale']} ${_product.json['currencyName']}",
+                      ),
+                      trailing: Column(
+                        children: [
+                          Text(
+                            "${widget.product.percentForSale.toStringAsFixed(2)} %",
+                          ),
+                          Text(
+                            "${widget.product.percentForMinimumSale.toStringAsFixed(2)} %",
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: pricePercentOfSaleController,
+                            focusNode: percentFocused,
+                            decoration: InputDecoration(
+                              labelText: "Satyş baha göterimi",
+                              helper: Text(
+                                "Kone satyş baha göterimi: ${widget.product.percentForSale.toStringAsFixed(2)}",
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontStyle: FontStyle.italic,
+                                  fontSize: 12,
+                                ),
+                              ),
+
+                              suffix: Text('%', style: TextStyle(fontSize: 12)),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: TextField(
+                            controller: pricePercentOfMinimumSaleController,
+                            focusNode: percentMinimumFocused,
+                            decoration: InputDecoration(
+                              labelText: "Minimum satyş baha göterimi",
+                              helper: Text(
+                                "Kone minimum satyş baha göterimi: ${widget.product.percentForMinimumSale.toStringAsFixed(2)}",
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontStyle: FontStyle.italic,
+                                  fontSize: 12,
+                                ),
+                              ),
+
+                              suffix: Text('%', style: TextStyle(fontSize: 12)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16),
+                    ..._priceControllerModels.map(
+                      (e) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: e.priceForBuyController,
+                                focusNode: e.priceForBuyFocusNode,
+                                decoration: InputDecoration(
+                                  labelText: "Alyş baha",
+                                  helper: Text(
+                                    "Kone alyş bahasy: ${(widget.product.json['price_base_for_buying'] / _defaultCurrencyRate * e.currency.json['rate']).toStringAsFixed(2)}",
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontStyle: FontStyle.italic,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  suffix: Text(
+                                    e.currency.json['name'].toString(),
+                                    style: TextStyle(fontSize: 12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 26),
+                            Expanded(
+                              child: TextField(
+                                controller: e.priceForSaleController,
+                                focusNode: e.priceForSaleFocusNode,
+                                decoration: InputDecoration(
+                                  labelText: "Satyş baha",
+                                  helper: Text(
+                                    "Kone satyş bahasy: ${(widget.product.json['price_base_for_sale'] / _defaultCurrencyRate * e.currency.json['rate']).toStringAsFixed(2)}",
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontStyle: FontStyle.italic,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  suffix: Text(
+                                    e.currency.name,
+                                    style: TextStyle(fontSize: 12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 26),
+                            Expanded(
+                              child: TextField(
+                                controller: e.priceForMinimumSaleController,
+                                focusNode: e.priceForMinimumSaleFocusNode,
+                                decoration: InputDecoration(
+                                  labelText: "Minimum satyş baha",
+                                  helper: Text(
+                                    "Kone minimum satyş bahasy: ${(widget.product.json['price_minimum_for_sale'] / _defaultCurrencyRate * e.currency.json['rate']).toStringAsFixed(2)}",
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontStyle: FontStyle.italic,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  suffix: Text(
+                                    e.currency.name,
+                                    style: TextStyle(fontSize: 12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 26),
+                    ListTile(
+                      title: Text("Aýratyklyklar"),
+                      subtitle: Text(
+                        "${_product.json['property_1']}\n${_product.json['property_2']}\n${_product.json['property_3']}\n${_product.json['property_4']}\n${_product.json['property_5']}",
+                      ),
+                    ),
+                    SizedBox(height: 26),
+                    FutureBuilder(
+                      future: _transactions,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return CircularProgressIndicator();
+                        }
+                        if (snapshot.hasError) {
+                          debugPrint(snapshot.error.toString());
+                          return Text(snapshot.error.toString());
+                        }
+                        final transactions = snapshot.data ?? [];
+                        return ExpansionTile(
+                          title: Text("Soňky hereketler"),
+                          initiallyExpanded: true,
+                          children:
+                              transactions
+                                  .map(
+                                    (e) => ListTile(
+                                      title: Text('${e.warehouse}: ${e.count} ${_product.json['measureName']}'),
+                                      subtitle: Text('${e.transactionType} (${e.customer})\nBellik: ${e.node}\n${e.date}'),
+                                      trailing: Text('${e.price} ${_product.json['currencyName']}'),
+                                    ),
+                                  )
+                                  .toList(),
+                        );
+                      },
                     ),
                   ],
                 ),
               ),
-              SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: pricePercentOfSaleController,
-                      focusNode: percentFocused,
-                      decoration: InputDecoration(
-                        labelText: "Satyş baha göterimi",
-                        helper: Text(
-                          "Kone satyş baha göterimi: ${widget.product.percentForSale.toStringAsFixed(2)}",
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontStyle: FontStyle.italic,
-                            fontSize: 12,
-                          ),
-                        ),
-
-                        suffix: Text('%', style: TextStyle(fontSize: 12)),
-                      ),
+            ),
+            SizedBox(height: 26),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
                     ),
                   ),
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: TextField(
-                      controller: pricePercentOfMinimumSaleController,
-                      focusNode: percentMinimumFocused,
-                      decoration: InputDecoration(
-                        labelText: "Minimum satyş baha göterimi",
-                        helper: Text(
-                          "Kone minimum satyş baha göterimi: ${widget.product.percentForMinimumSale.toStringAsFixed(2)}",
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontStyle: FontStyle.italic,
-                            fontSize: 12,
-                          ),
-                        ),
-
-                        suffix: Text('%', style: TextStyle(fontSize: 12)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 16),
-              ..._priceControllerModels.map(
-                (e) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: e.priceForBuyController,
-                          focusNode: e.priceForBuyFocusNode,
-                          decoration: InputDecoration(
-                            labelText: "Alyş baha",
-                            helper: Text(
-                              "Kone alyş bahasy: ${(widget.product.json['price_base_for_buying'] / _defaultCurrencyRate * e.currency.json['rate']).toStringAsFixed(2)}",
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontStyle: FontStyle.italic,
-                                fontSize: 12,
-                              ),
-                            ),
-                            suffix: Text(
-                              e.currency.json['name'].toString(),
-                              style: TextStyle(fontSize: 12),
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 26),
-                      Expanded(
-                        child: TextField(
-                          controller: e.priceForSaleController,
-                          focusNode: e.priceForSaleFocusNode,
-                          decoration: InputDecoration(
-                            labelText: "Satyş baha",
-                            helper: Text(
-                              "Kone satyş bahasy: ${(widget.product.json['price_base_for_sale'] / _defaultCurrencyRate * e.currency.json['rate']).toStringAsFixed(2)}",
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontStyle: FontStyle.italic,
-                                fontSize: 12,
-                              ),
-                            ),
-                            suffix: Text(
-                              e.currency.name,
-                              style: TextStyle(fontSize: 12),
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 26),
-                      Expanded(
-                        child: TextField(
-                          controller: e.priceForMinimumSaleController,
-                          focusNode: e.priceForMinimumSaleFocusNode,
-                          decoration: InputDecoration(
-                            labelText: "Minimum satyş baha",
-                            helper: Text(
-                              "Kone minimum satyş bahasy: ${(widget.product.json['price_minimum_for_sale'] / _defaultCurrencyRate * e.currency.json['rate']).toStringAsFixed(2)}",
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontStyle: FontStyle.italic,
-                                fontSize: 12,
-                              ),
-                            ),
-                            suffix: Text(
-                              e.currency.name,
-                              style: TextStyle(fontSize: 12),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  child: Text("Goý Bolsun"),
                 ),
-              ),
-              SizedBox(height: 26),
-              ListTile(
-                title: Text("Aýratyklyklar"),
-                subtitle: Text(
-                  "${_product.json['property_1']}\n${_product.json['property_2']}\n${_product.json['property_3']}\n${_product.json['property_4']}\n${_product.json['property_5']}",
-                ),
-              ),
-              SizedBox(height: 26),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.red,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    child: Text("Goý Bolsun"),
-                  ),
-                  SizedBox(width: 16),
-                  ElevatedButton(
-                    onPressed: () async {
-                      showDialog(
-                        context: context,
-                        builder:
-                            (context) => AlertDialog(
-                              content: CircularProgressIndicator(),
-                            ),
-                        barrierDismissible: false,
+                SizedBox(width: 16),
+                ElevatedButton(
+                  onPressed: () async {
+                    showDialog(
+                      context: context,
+                      builder:
+                          (context) =>
+                              AlertDialog(content: CircularProgressIndicator()),
+                      barrierDismissible: false,
+                    );
+                    try {
+                      final pController = _priceControllerModels.firstWhere(
+                        (element) =>
+                            element.currency.json['_id'] ==
+                            _product.json['currency'],
                       );
-                      try {
-                        await AishManager().updateProduct(
-                          id: _product.json['_id'],
-                          priceForMinimumSale: 5,
-                          priceForBuy: 5,
-                          priceForSale: 5,
-                        );
-                        Navigator.pop(context);
-                        // Navigator.pop(context, true);
-                      } catch (e) {
-                        debugPrint(e.toString());
-                        Navigator.pop(context);
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    child: Text(
-                      "Ýatda Sakla",
-                      style: TextStyle(color: Colors.white),
+
+                      await AishManager().updateProduct(
+                        id: _product.json['_id'],
+                        priceForMinimumSale: double.tryParse(
+                          pController.priceForMinimumSaleController.text,
+                        ),
+                        priceForBuy: double.tryParse(
+                          pController.priceForBuyController.text,
+                        ),
+                        priceForSale: double.tryParse(
+                          pController.priceForSaleController.text,
+                        ),
+                      );
+                      Navigator.pop(context);
+                      Navigator.pop(context, true);
+                    } catch (e) {
+                      debugPrint(e.toString());
+                      Navigator.pop(context);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueAccent,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
                     ),
                   ),
-                ],
-              ),
-            ],
-          ),
+                  child: Text(
+                    "Ýatda Sakla",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
