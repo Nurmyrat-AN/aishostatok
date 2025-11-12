@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:aishostatok/database/app_database.dart';
 import 'package:aishostatok/database/models/currency.dart';
 import 'package:aishostatok/database/models/product.dart';
+import 'package:aishostatok/database/models/transaction.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:printing/printing.dart';
@@ -47,8 +49,30 @@ class _PrintScreenState extends State<PrintScreen> {
     _fontSizeController.addListener(() => _listener(6));
     _initProperties();
 
-    MProduct.getAll(ids: widget.selectedProducts).then((value) {
-      products = value;
+    MProduct.getAll(ids: widget.selectedProducts).then((value) async {
+      final db = await AppDatabase().database;
+      final trc = await db.rawQuery(
+        '''
+            SELECT 
+              transactions.*,
+              customer.name as customer_name,
+              warehouse.name as warehouse_name
+            FROM transactions 
+              RIGHT JOIN customer ON transactions.customer_1=customer._id
+              RIGHT JOIN warehouse ON transactions.warehouse_1=warehouse._id
+              WHERE transactions.product IN (${widget.selectedProducts.map((e) => "'$e'").join(',')}) AND transactions.transaction_type='Inbound/Purchase'
+        ''',
+      );
+      final transactions = {};
+      for (final tr in trc) {
+        transactions[tr['product']] = MTransaction(json: tr);
+      }
+
+      products =
+          value.map((e) {
+            e.json['transaction'] = transactions[e.json['_id']];
+            return e;
+          }).toList();
       setState(() {});
     });
   }
@@ -98,7 +122,7 @@ class _PrintScreenState extends State<PrintScreen> {
 
   @override
   Widget build(BuildContext context) {
-    int tableColCount = 10;
+    int tableColCount = 11;
     if (_property_1.text.isNotEmpty) tableColCount++;
     if (_property_2.text.isNotEmpty) tableColCount++;
     if (_property_3.text.isNotEmpty) tableColCount++;
@@ -329,6 +353,7 @@ class _PrintScreenState extends State<PrintScreen> {
         if (p3 != null && p3!.isNotEmpty) p3,
         if (p4 != null && p4!.isNotEmpty) p4,
         if (p5 != null && p5!.isNotEmpty) p5,
+        'Soňky hereket',
       ],
       data:
           (products.length < _from
@@ -365,6 +390,7 @@ class _PrintScreenState extends State<PrintScreen> {
                   if (p3 != null && p3!.isNotEmpty) e.json['property_3'],
                   if (p4 != null && p4!.isNotEmpty) e.json['property_4'],
                   if (p5 != null && p5!.isNotEmpty) e.json['property_5'],
+                  '${e.transaction?.count} ${e.json['measureName']} * ${e.transaction?.price} ${e.json['currencyName']}\n${e.transaction?.customer.toString()}\n${e.transaction?.date}',
                 ],
               )
               .toList(),
@@ -403,7 +429,7 @@ class _TableSizesState extends State<_TableSizes> {
   @override
   void initState() {
     super.initState();
-    _tSizes = List.generate(widget.count, (index) => 10);
+    _tSizes = List.generate(widget.count, (index) => 11);
     _controllers =
         _tSizes.map((e) => TextEditingController(text: e.toString())).toList();
     _getSizes();
@@ -413,7 +439,7 @@ class _TableSizesState extends State<_TableSizes> {
   void didUpdateWidget(covariant _TableSizes oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.count != widget.count) {
-      _tSizes = List.generate(widget.count, (index) => 10);
+      _tSizes = List.generate(widget.count, (index) => 11);
       _controllers =
           _tSizes
               .map((e) => TextEditingController(text: e.toString()))

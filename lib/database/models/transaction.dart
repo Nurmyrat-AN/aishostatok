@@ -4,7 +4,8 @@ import 'package:sqflite/sqflite.dart';
 class MTransaction extends BaseModel {
   MTransaction({required super.json});
 
-  String get transactionType => transactionTypesEnum[json['transaction_type']] ?? '';
+  String get transactionType =>
+      transactionTypesEnum[json['transaction_type']] ?? '';
 
   String get count => json['count_mainmeasure'];
 
@@ -29,7 +30,8 @@ class MTransaction extends BaseModel {
 
   static String tableName = 'transactions';
 
-  String get date => json['transaction_date'].toString().replaceAll('T', ' ');
+  String get date =>
+      json['transaction_date'].toString().replaceAll('T', ' ').substring(0, 19);
 
   static createTable(Database db) async {
     await db.execute('''

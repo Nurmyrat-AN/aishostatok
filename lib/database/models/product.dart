@@ -47,6 +47,9 @@ class MProduct extends BaseModel {
       (json['price_minimum_for_sale'] / json['price_base_for_buying'] - 1) *
       100;
 
+  MTransaction? get transaction =>
+      json.containsKey('transaction') ? json['transaction'] : null;
+
   static Future<void> createTable(Database db) async {
     await db.execute("DROP TABLE IF EXISTS lstBarcodes");
     await db.execute(
